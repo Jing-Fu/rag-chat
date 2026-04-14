@@ -1,20 +1,36 @@
-# RAG 智慧問答開發者平台 — 實作計畫
+﻿# RAG ?箸????像????撖虫?閮
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 建立一個 Self-hosted 的 RAG 開發者工具平台，讓開發者能快速建立、管理和部署 RAG 智慧問答應用。
-
-**Architecture:** 前後端分離 — Next.js 14 純前端 + FastAPI 模組化後端，PostgreSQL + pgvector 做資料與向量儲存，Ollama 做本地 LLM。Monorepo 結構（`frontend/` + `backend/`）。
-
+**Goal:** 撱箇?銝??Self-hosted ??RAG ??極?瑕像?堆?霈??潸敹恍遣蝡恣???函蔡 RAG ?箸?????
+**Architecture:** ??蝡臬?????Next.js 14 蝝?蝡?+ FastAPI 璅∠???蝡荔?PostgreSQL + pgvector ???????脣?嚗llama ???LLM?onorepo 蝯?嚗frontend/` + `backend/`嚗?
 **Tech Stack:** Python 3.12, FastAPI, SQLAlchemy 2.0, Alembic, pgvector, LangChain, Ollama SDK, Next.js 14, TypeScript, Tailwind CSS, shadcn/ui, React Query, Zustand, Docker Compose
 
 **Design Spec:** [design-spec.md](file:///D:/workspace/playground/rag-chat/docs/design-spec.md)
 
-**Current Frontend Baseline:** `frontend/` 已存在，且目前包含首頁 `/` 聊天入口、`/knowledge`、`/prompts` 的靜態 UI 骨架，以及 `AppSidebar`、`ChatHeader`、`ChatInput` 等共用元件。前端任務應在此基線上補齊資料層與功能，不重新初始化專案。
-
+**Current Frontend Baseline:** `frontend/` 撌脣??剁?銝???恍???`/` ?予?亙?/knowledge`?/prompts` ????UI 撉冽嚗誑??`AppSidebar`?ChatHeader`?ChatInput` 蝑?典?隞嗚?蝡臭遙???冽迨?箇?銝?朣??惜???踝?銝??啣?憪?撠???
 ---
 
-## Task 1: 專案初始化與基礎設施
+## Status Snapshot (2026-04-14)
+
+- Checked completed implementation and verification steps across Task 1 to Task 10.
+- Kept commit-related steps unchecked because commits were not executed as part of this update.
+- Kept Task 10 Step 4 unchecked because the full manual E2E scenario (model pull + upload + chat/query flow) was not fully exercised end-to-end in this update.
+
+### Remaining Unchecked Steps
+
+- Task 1 - Step 9: Commit
+- Task 2 - Step 9: Commit
+- Task 3 - Step 3: Commit
+- Task 4 - Step 7: Commit
+- Task 5 - Step 6: Commit
+- Task 6 - Step 3: Register router, test, and commit
+- Task 7 - Step 5: Register routers, test, and commit
+- Task 8 - Step 9: Commit
+- Task 9 - Step 7: Commit
+- Task 10 - Step 4: End-to-end functional test
+- Task 10 - Step 6: Final Commit
+## Task 1: 撠??????箇?閮剜
 
 **Files:**
 - Create: `backend/pyproject.toml`
@@ -26,13 +42,13 @@
 - Create: `docker-compose.yml`
 - Create: `README.md`
 
-- [x] **Step 1: 建立 Monorepo 根目錄**
+- [x] **Step 1: 撱箇? Monorepo ?寧??*
 
 ```powershell
 New-Item -ItemType Directory -Force -Path "D:\workspace\playground\rag-chat\backend\app"
 ```
 
-- [x] **Step 2: 建立 backend/pyproject.toml**
+- [x] **Step 2: 撱箇? backend/pyproject.toml**
 
 ```toml
 [project]
@@ -80,7 +96,7 @@ select = ["B", "E", "F", "I", "UP"]
 asyncio_mode = "auto"
 ```
 
-- [x] **Step 3: 建立 backend/app/config.py**
+- [x] **Step 3: 撱箇? backend/app/config.py**
 
 ```python
 from pydantic_settings import BaseSettings
@@ -119,7 +135,7 @@ class Settings(BaseSettings):
 settings = Settings()
 ```
 
-- [x] **Step 4: 建立 backend/app/database.py**
+- [x] **Step 4: 撱箇? backend/app/database.py**
 
 ```python
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -143,7 +159,7 @@ async def get_db() -> AsyncSession:
             await session.close()
 ```
 
-- [x] **Step 5: 建立 backend/app/main.py**
+- [x] **Step 5: 撱箇? backend/app/main.py**
 
 ```python
 from contextlib import asynccontextmanager
@@ -163,7 +179,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="RAG Platform API",
-    description="RAG 智慧問答開發者平台 API",
+    description="RAG ?箸????像??API",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -182,7 +198,7 @@ async def health_check():
     return {"status": "ok"}
 ```
 
-- [x] **Step 6: 建立 .env.example**
+- [x] **Step 6: 撱箇? .env.example**
 
 ```env
 # Database
@@ -205,7 +221,7 @@ UPLOAD_MAX_SIZE_MB=50
 UPLOAD_DIR=./uploads
 ```
 
-- [x] **Step 7: 建立 docker-compose.yml**
+- [x] **Step 7: 撱箇? docker-compose.yml**
 
 ```yaml
 services:
@@ -266,7 +282,7 @@ volumes:
   upload_data:
 ```
 
-- [x] **Step 8: 安裝依賴並驗證啟動**
+- [x] **Step 8: 摰?靘陷銝阡?霅???*
 
 ```powershell
 cd D:\workspace\playground\rag-chat\backend
@@ -287,7 +303,7 @@ git commit -m "feat: project scaffolding with FastAPI, config, and docker-compos
 
 ---
 
-## Task 2: 資料庫模型與 Migration
+## Task 2: 鞈?摨急芋?? Migration
 
 **Files:**
 - Create: `backend/app/models/__init__.py`
@@ -301,7 +317,7 @@ git commit -m "feat: project scaffolding with FastAPI, config, and docker-compos
 - Create: `backend/alembic/`
 - Create: `backend/tests/test_models.py`
 
-- [ ] **Step 1: 建立 backend/app/models/knowledge_base.py**
+- [x] **Step 1: 撱箇? backend/app/models/knowledge_base.py**
 
 ```python
 import uuid
@@ -332,7 +348,7 @@ class KnowledgeBase(Base):
     documents: Mapped[list["Document"]] = relationship(back_populates="knowledge_base", cascade="all, delete-orphan")
 ```
 
-- [ ] **Step 2: 建立 backend/app/models/document.py**
+- [x] **Step 2: 撱箇? backend/app/models/document.py**
 
 ```python
 import uuid
@@ -361,7 +377,7 @@ class Document(Base):
     chunks: Mapped[list["Chunk"]] = relationship(back_populates="document", cascade="all, delete-orphan")
 ```
 
-- [ ] **Step 3: 建立 backend/app/models/chunk.py**
+- [x] **Step 3: 撱箇? backend/app/models/chunk.py**
 
 ```python
 import uuid
@@ -381,15 +397,14 @@ class Chunk(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     doc_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"))
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    embedding = mapped_column(Vector(768), nullable=True)  # nomic-embed-text 預設 768 維
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    embedding = mapped_column(Vector(768), nullable=True)  # nomic-embed-text ?身 768 蝬?    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     document: Mapped["Document"] = relationship(back_populates="chunks")
 ```
 
-- [ ] **Step 4: 建立其餘 models（prompt_template, api_endpoint, chat, ollama_model）**
+- [x] **Step 4: 撱箇??園? models嚗rompt_template, api_endpoint, chat, ollama_model嚗?*
 
 **backend/app/models/prompt_template.py:**
 ```python
@@ -409,7 +424,7 @@ class PromptTemplate(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     system_prompt: Mapped[str] = mapped_column(Text, nullable=False)
-    user_prompt_template: Mapped[str] = mapped_column(Text, nullable=False, default="根據以下資料回答問題：\n\n{context}\n\n問題：{question}")
+    user_prompt_template: Mapped[str] = mapped_column(Text, nullable=False, default="?寞?隞乩?鞈?????嚗n\n{context}\n\n??嚗question}")
     temperature: Mapped[float] = mapped_column(Float, default=0.7)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -505,7 +520,7 @@ class OllamaModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 ```
 
-- [ ] **Step 5: 建立 backend/app/models/__init__.py**
+- [x] **Step 5: 撱箇? backend/app/models/__init__.py**
 
 ```python
 from app.models.api_endpoint import ApiEndpoint
@@ -528,24 +543,22 @@ __all__ = [
 ]
 ```
 
-- [ ] **Step 6: 初始化 Alembic**
+- [x] **Step 6: ????Alembic**
 
 ```powershell
 cd D:\workspace\playground\rag-chat\backend
 uv run alembic init alembic
 ```
 
-修改 `alembic/env.py`，將 `target_metadata` 設為 `Base.metadata`，並使用 async engine。
-
-修改 `alembic.ini`，將 `sqlalchemy.url` 設為空，改由 `env.py` 動態讀取 `settings.database_url`。
-
-- [ ] **Step 7: 產生初始 migration**
+靽格 `alembic/env.py`嚗? `target_metadata` 閮剔 `Base.metadata`嚗蒂雿輻 async engine??
+靽格 `alembic.ini`嚗? `sqlalchemy.url` 閮剔蝛綽??寧 `env.py` ??霈??`settings.database_url`??
+- [x] **Step 7: ?Ｙ??? migration**
 
 ```powershell
 uv run alembic revision --autogenerate -m "initial_tables"
 ```
 
-- [ ] **Step 8: 啟動 Postgres 並執行 migration**
+- [x] **Step 8: ?? Postgres 銝血銵?migration**
 
 ```powershell
 cd D:\workspace\playground\rag-chat
@@ -554,8 +567,7 @@ cd backend
 uv run alembic upgrade head
 ```
 
-Expected: 所有 7 張表已建立在 `rag_platform` 資料庫中。
-
+Expected: ???7 撘菔”撌脣遣蝡 `rag_platform` 鞈?摨思葉??
 - [ ] **Step 9: Commit**
 
 ```powershell
@@ -576,7 +588,7 @@ git commit -m "feat: database models and initial migration for all 7 tables"
 - Create: `backend/app/schemas/chat.py`
 - Create: `backend/app/schemas/model.py`
 
-- [ ] **Step 1: 建立所有 schemas**
+- [x] **Step 1: 撱箇????schemas**
 
 **backend/app/schemas/knowledge_base.py:**
 ```python
@@ -649,7 +661,7 @@ from pydantic import BaseModel, Field
 class PromptTemplateCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     system_prompt: str
-    user_prompt_template: str = "根據以下資料回答問題：\n\n{context}\n\n問題：{question}"
+    user_prompt_template: str = "?寞?隞乩?鞈?????嚗n\n{context}\n\n??嚗question}"
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
     is_default: bool = False
 
@@ -762,7 +774,7 @@ class ModelInfo(BaseModel):
     modified_at: str | None = None
 ```
 
-- [ ] **Step 2: 建立 schemas/__init__.py 匯出全部**
+- [x] **Step 2: 撱箇? schemas/__init__.py ?臬?券**
 
 - [ ] **Step 3: Commit**
 
@@ -773,7 +785,7 @@ git commit -m "feat: pydantic schemas for all API endpoints"
 
 ---
 
-## Task 4: 知識庫管理 API + 文件匯入
+## Task 4: ?亥?摨怎恣??API + ?辣?臬
 
 **Files:**
 - Create: `backend/app/core/ingestion.py`
@@ -781,9 +793,9 @@ git commit -m "feat: pydantic schemas for all API endpoints"
 - Create: `backend/app/services/knowledge_service.py`
 - Create: `backend/app/api/knowledge.py`
 - Create: `backend/tests/test_knowledge_api.py`
-- Modify: `backend/app/main.py` — 註冊 router
+- Modify: `backend/app/main.py` ??閮餃? router
 
-- [ ] **Step 1: 建立 backend/app/core/embeddings.py**
+- [x] **Step 1: 撱箇? backend/app/core/embeddings.py**
 
 ```python
 import ollama as ollama_client
@@ -792,7 +804,7 @@ from app.config import settings
 
 
 async def generate_embeddings(texts: list[str], model: str | None = None) -> list[list[float]]:
-    """使用 Ollama 產生文本的 embedding 向量。"""
+    """雿輻 Ollama ?Ｙ????embedding ????""
     model = model or settings.ollama_embedding_model
     client = ollama_client.AsyncClient(host=settings.ollama_base_url)
     embeddings = []
@@ -802,7 +814,7 @@ async def generate_embeddings(texts: list[str], model: str | None = None) -> lis
     return embeddings
 ```
 
-- [ ] **Step 2: 建立 backend/app/core/ingestion.py**
+- [x] **Step 2: 撱箇? backend/app/core/ingestion.py**
 
 ```python
 from pathlib import Path
@@ -813,7 +825,7 @@ from pypdf import PdfReader
 
 
 def extract_text(file_path: str, file_type: str) -> str:
-    """從檔案中擷取純文字。"""
+    """敺?獢葉?瑕?蝝?摮?""
     if file_type in (".txt", ".md", ".csv"):
         return Path(file_path).read_text(encoding="utf-8")
     elif file_type == ".pdf":
@@ -827,32 +839,27 @@ def extract_text(file_path: str, file_type: str) -> str:
 
 
 def split_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
-    """將文本切分為 chunks。"""
+    """撠??砍?? chunks??""
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", "。", "！", "？", " ", ""],
+        separators=["\n\n", "\n", "??, "嚗?, "嚗?, " ", ""],
     )
     return splitter.split_text(text)
 ```
 
-- [ ] **Step 3: 建立 backend/app/services/knowledge_service.py**
+- [x] **Step 3: 撱箇? backend/app/services/knowledge_service.py**
 
-實作知識庫 CRUD 和文件上傳邏輯，包含：
+撖虫??亥?摨?CRUD ??隞嗡??喲?頛荔??嚗?
+- `list_knowledge_bases()` ???亥岷?券 KB嚗?撣嗆?隞嗆??- `create_knowledge_base(data)` ??撱箇? KB
+- `get_knowledge_base(kb_id)` ?????桐? KB
+- `update_knowledge_base(kb_id, data)` ???湔 KB
+- `delete_knowledge_base(kb_id)` ???芷 KB ????隞?- `upload_document(kb_id, file)` ??銝?辣???摮??mbedding?摮?- `list_documents(kb_id)` ??? KB 銝??辣
+- `delete_document(kb_id, doc_id)` ???芷?辣? chunks
+- `reindex_document(kb_id, doc_id)` ???????embedding
 
-- `list_knowledge_bases()` — 查詢全部 KB，附帶文件數量
-- `create_knowledge_base(data)` — 建立 KB
-- `get_knowledge_base(kb_id)` — 取得單一 KB
-- `update_knowledge_base(kb_id, data)` — 更新 KB
-- `delete_knowledge_base(kb_id)` — 刪除 KB 及其所有文件
-- `upload_document(kb_id, file)` — 上傳文件、擷取文字、切分、embedding、儲存
-- `list_documents(kb_id)` — 列出 KB 下的文件
-- `delete_document(kb_id, doc_id)` — 刪除文件及其 chunks
-- `reindex_document(kb_id, doc_id)` — 重新切分和 embedding
-
-每個方法使用 `AsyncSession` 進行非同步 DB 操作。
-
-- [ ] **Step 4: 建立 backend/app/api/knowledge.py — Router**
+瘥瘜蝙??`AsyncSession` ?脰???甇?DB ????
+- [x] **Step 4: 撱箇? backend/app/api/knowledge.py ??Router**
 
 ```python
 import uuid
@@ -938,19 +945,17 @@ async def reindex_document(
     return await service.reindex_document(kb_id, doc_id)
 ```
 
-- [ ] **Step 5: 在 main.py 註冊 knowledge router**
+- [x] **Step 5: ??main.py 閮餃? knowledge router**
 
-在 `app/main.py` 加入：
-```python
+??`app/main.py` ?嚗?```python
 from app.api.knowledge import router as knowledge_router
 app.include_router(knowledge_router)
 ```
 
-- [ ] **Step 6: 寫測試並執行**
+- [x] **Step 6: 撖急葫閰虫蒂?瑁?**
 
 Run: `uv run pytest tests/test_knowledge_api.py -v`
-Expected: 所有知識庫 CRUD 和文件上傳測試通過。
-
+Expected: ??霅澈 CRUD ??隞嗡??單葫閰阡???
 - [ ] **Step 7: Commit**
 
 ```powershell
@@ -960,20 +965,18 @@ git commit -m "feat: knowledge base API with document upload, ingestion, and emb
 
 ---
 
-## Task 5: 聊天 API（SSE 串流）
-
+## Task 5: ?予 API嚗SE 銝脫?嚗?
 **Files:**
 - Create: `backend/app/core/rag.py`
 - Create: `backend/app/core/retrieval.py`
 - Create: `backend/app/services/chat_service.py`
 - Create: `backend/app/api/chat.py`
 - Create: `backend/tests/test_chat_api.py`
-- Modify: `backend/app/main.py` — 註冊 router
+- Modify: `backend/app/main.py` ??閮餃? router
 
-- [ ] **Step 1: 建立 backend/app/core/retrieval.py**
+- [x] **Step 1: 撱箇? backend/app/core/retrieval.py**
 
-實作向量檢索邏輯：
-- `retrieve_relevant_chunks(db, kb_id, query_embedding, top_k=5)` — 使用 pgvector cosine similarity 從指定知識庫檢索 Top-K chunks
+撖虫???瑼Ｙ揣?摩嚗?- `retrieve_relevant_chunks(db, kb_id, query_embedding, top_k=5)` ??雿輻 pgvector cosine similarity 敺?摰霅澈瑼Ｙ揣 Top-K chunks
 
 ```python
 from sqlalchemy import select
@@ -989,7 +992,7 @@ async def retrieve_relevant_chunks(
     query_embedding: list[float],
     top_k: int = 5,
 ) -> list[dict]:
-    """從知識庫檢索最相關的 chunks。"""
+    """敺霅澈瑼Ｙ揣??賊???chunks??""
     embedding_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
 
     stmt = (
@@ -1024,13 +1027,11 @@ async def retrieve_relevant_chunks(
     ]
 ```
 
-- [ ] **Step 2: 建立 backend/app/core/rag.py**
+- [x] **Step 2: 撱箇? backend/app/core/rag.py**
 
-實作 RAG pipeline 核心邏輯：
-- `build_rag_prompt(system_prompt, user_template, context_chunks, question, chat_history)` — 組裝完整 prompt
-- `stream_rag_response(db, request)` — 完整的 RAG 流程（向量化查詢 → 檢索 → 組裝 prompt → Ollama 串流生成）
-
-- [ ] **Step 3: 建立 backend/app/api/chat.py — 含 SSE 串流**
+撖虫? RAG pipeline ?詨??摩嚗?- `build_rag_prompt(system_prompt, user_template, context_chunks, question, chat_history)` ??蝯?摰 prompt
+- `stream_rag_response(db, request)` ??摰??RAG 瘚?嚗????亥岷 ??瑼Ｙ揣 ??蝯? prompt ??Ollama 銝脫???嚗?
+- [x] **Step 3: 撱箇? backend/app/api/chat.py ????SSE 銝脫?**
 
 ```python
 import uuid
@@ -1070,13 +1071,12 @@ async def delete_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_d
     await service.delete_session(session_id)
 ```
 
-- [ ] **Step 4: 在 main.py 註冊 chat router**
+- [x] **Step 4: ??main.py 閮餃? chat router**
 
-- [ ] **Step 5: 測試 SSE 串流**
+- [x] **Step 5: 皜祈岫 SSE 銝脫?**
 
 Run: `uv run pytest tests/test_chat_api.py -v`
-Expected: 聊天 API 測試通過，含 SSE 串流回應驗證。
-
+Expected: ?予 API 皜祈岫??嚗 SSE 銝脫???撽???
 - [ ] **Step 6: Commit**
 
 ```powershell
@@ -1086,27 +1086,25 @@ git commit -m "feat: chat API with RAG pipeline and SSE streaming"
 
 ---
 
-## Task 6: API 端點管理
+## Task 6: API 蝡舫?蝞∠?
 
 **Files:**
 - Create: `backend/app/services/endpoint_service.py`
 - Create: `backend/app/api/endpoints.py`
 - Create: `backend/tests/test_endpoints_api.py`
-- Modify: `backend/app/main.py` — 註冊 router
+- Modify: `backend/app/main.py` ??閮餃? router
 
-- [ ] **Step 1: 建立 endpoint_service.py**
+- [x] **Step 1: 撱箇? endpoint_service.py**
 
-實作 API 端點 CRUD + 查詢邏輯：
-- `list_endpoints()` — 列出全部端點
-- `create_endpoint(data)` — 建立端點（自動產生 API Key）
-- `query_endpoint(endpoint_id, question, api_key)` — 驗證 API Key，執行 RAG 查詢
-- `regenerate_key(endpoint_id)` — 重新產生 API Key
+撖虫? API 蝡舫? CRUD + ?亥岷?摩嚗?- `list_endpoints()` ????券蝡舫?
+- `create_endpoint(data)` ??撱箇?蝡舫?嚗???API Key嚗?- `query_endpoint(endpoint_id, question, api_key)` ??撽? API Key嚗銵?RAG ?亥岷
+- `regenerate_key(endpoint_id)` ????Ｙ? API Key
 
-- [ ] **Step 2: 建立 backend/app/api/endpoints.py — Router**
+- [x] **Step 2: 撱箇? backend/app/api/endpoints.py ??Router**
 
-包含 4 個端點：GET list, POST create, POST query, POST regenerate-key
+? 4 ?垢暺?GET list, POST create, POST query, POST regenerate-key
 
-- [ ] **Step 3: 在 main.py 註冊 router，測試，Commit**
+- [ ] **Step 3: ??main.py 閮餃? router嚗葫閰佗?Commit**
 
 ```powershell
 git add .
@@ -1115,7 +1113,7 @@ git commit -m "feat: API endpoint management with key-based authentication"
 
 ---
 
-## Task 7: 模型管理 + Prompt 模板 API
+## Task 7: 璅∪?蝞∠? + Prompt 璅⊥ API
 
 **Files:**
 - Create: `backend/app/services/model_service.py`
@@ -1124,9 +1122,9 @@ git commit -m "feat: API endpoint management with key-based authentication"
 - Create: `backend/app/api/prompts.py`
 - Create: `backend/tests/test_models_api.py`
 - Create: `backend/tests/test_prompts_api.py`
-- Modify: `backend/app/main.py` — 註冊 routers
+- Modify: `backend/app/main.py` ??閮餃? routers
 
-- [ ] **Step 1: 建立 model_service.py**
+- [x] **Step 1: 撱箇? model_service.py**
 
 ```python
 import ollama as ollama_client
@@ -1139,7 +1137,7 @@ class ModelService:
         self.client = ollama_client.AsyncClient(host=settings.ollama_base_url)
 
     async def list_models(self) -> list[dict]:
-        """列出 Ollama 本地可用的模型。"""
+        """? Ollama ?砍?舐?芋??""
         response = await self.client.list()
         return [
             {
@@ -1152,22 +1150,22 @@ class ModelService:
         ]
 
     async def pull_model(self, model_name: str):
-        """拉取新模型（generator 串流進度）。"""
+        """???唳芋??generator 銝脫??脣漲嚗?""
         async for progress in await self.client.pull(model_name, stream=True):
             yield progress
 
     async def delete_model(self, model_name: str):
-        """刪除本地模型。"""
+        """?芷?砍璅∪???""
         await self.client.delete(model_name)
 ```
 
-- [ ] **Step 2: 建立 backend/app/api/models.py**
+- [x] **Step 2: 撱箇? backend/app/api/models.py**
 
-- [ ] **Step 3: 建立 prompt_service.py — CRUD 操作**
+- [x] **Step 3: 撱箇? prompt_service.py ??CRUD ??**
 
-- [ ] **Step 4: 建立 backend/app/api/prompts.py**
+- [x] **Step 4: 撱箇? backend/app/api/prompts.py**
 
-- [ ] **Step 5: 在 main.py 註冊兩個 router，測試，Commit**
+- [ ] **Step 5: ??main.py 閮餃??拙?router嚗葫閰佗?Commit**
 
 ```powershell
 git add .
@@ -1176,7 +1174,7 @@ git commit -m "feat: model management and prompt template CRUD APIs"
 
 ---
 
-## Task 8: 前端骨架校準與資料層接線
+## Task 8: ?垢撉冽?⊥????惜?亦?
 
 **Files:**
 - Modify: `frontend/package.json`
@@ -1192,47 +1190,40 @@ git commit -m "feat: model management and prompt template CRUD APIs"
 - Create: `frontend/src/stores/`
 - Create: `frontend/src/test/setup.ts`
 
-- [ ] **Step 1: 盤點並保留既有前端骨架**
+- [x] **Step 1: ?日?銝虫????蝡舫爸??*
 
-確認 `frontend/` 既有頁面與元件為開發基線，保留現有深色 dashboard / chat shell 風格，不重新 scaffold Next.js 專案，不重做首頁 `/` 的整體資訊架構。
-
-- [ ] **Step 2: 補齊前端資料層依賴**
+蝣箄? `frontend/` ?Ｘ????隞嗥??箇?嚗???楛??dashboard / chat shell 憸冽嚗?? scaffold Next.js 撠?嚗???擐? `/` ?擃?閮瑽?
+- [x] **Step 2: 鋆??垢鞈?撅支?鞈?*
 
 ```powershell
 cd frontend
 npm install @tanstack/react-query zustand
 ```
 
-- [ ] **Step 3: 建立 providers 與 query client**
+- [x] **Step 3: 撱箇? providers ??query client**
 
-建立 `frontend/src/app/providers.tsx` 與 `frontend/src/lib/query-client.ts`，在 `layout.tsx` 掛入 React Query provider，讓首頁 `/`、`/knowledge`、`/prompts` 與後續頁面可以共用快取與錯誤邊界。
+撱箇? `frontend/src/app/providers.tsx` ??`frontend/src/lib/query-client.ts`嚗 `layout.tsx` ? React Query provider嚗?擐? `/`?/knowledge`?/prompts` ??蝥??Ｗ隞亙?典翰???航炊????
+- [x] **Step 4: 撱箇? API client (frontend/src/lib/api.ts)**
 
-- [ ] **Step 4: 建立 API client (frontend/src/lib/api.ts)**
+雿輻 `fetch` 撠????蝡?API ?澆??client嚗??恬?
+- `knowledgeApi` ???亥?摨?CRUD + ?辣銝
+- `chatApi` ???予嚗 SSE 銝脫?閫??嚗?- `endpointApi` ??API 蝡舫?蝞∠?
+- `modelApi` ??璅∪?蝞∠?
+- `promptApi` ??Prompt 璅⊥ CRUD
 
-使用 `fetch` 封裝所有後端 API 呼叫的 client，包含：
-- `knowledgeApi` — 知識庫 CRUD + 文件上傳
-- `chatApi` — 聊天（含 SSE 串流解析）
-- `endpointApi` — API 端點管理
-- `modelApi` — 模型管理
-- `promptApi` — Prompt 模板 CRUD
+- [x] **Step 5: 撱箇??梁 dashboard shell嚗???ａ?銴?撅**
 
-- [ ] **Step 5: 建立共用 dashboard shell，避免頁面重複佈局**
+?賢 `frontend/src/components/layout/dashboard-shell.tsx`嚗??暹?擐? `/`?/knowledge`?/prompts` ?臭誑?梁 Sidebar + content shell嚗??????閬死憸冽??閬賡?蝵柴?
+- [x] **Step 6: 鋆? client state ?葫閰血蝺?*
 
-抽出 `frontend/src/components/layout/dashboard-shell.tsx`，讓現有首頁 `/`、`/knowledge`、`/prompts` 可以共用 Sidebar + content shell，同時保留目前的視覺風格與導覽配置。
+撱箇? `frontend/src/stores/` 銝??箇? store嚗?憒???璅∪??rompt?霅澈??憭?session UI state嚗?銝西?銝?`frontend/src/test/setup.ts`嚗? Vitest 閮剖??舀迤撣詨銵?
+- [x] **Step 7: 霈???ａ脣?舀鞈????*
 
-- [ ] **Step 6: 補齊 client state 與測試基線**
-
-建立 `frontend/src/stores/` 下的基礎 store（例如目前選取的模型、Prompt、知識庫、聊天 session UI state），並補上 `frontend/src/test/setup.ts`，讓 Vitest 設定可正常執行。
-
-- [ ] **Step 7: 讓既有頁面進入可接資料狀態**
-
-調整 `/`、`/knowledge`、`/prompts` 頁面，將目前的 mock 版面接到共用 shell，並補上 loading / empty / error 狀態的資料邊界；此階段不必完成全部 CRUD，但要完成資料流接入準備。
-
-- [ ] **Step 8: 驗證前端骨架與資料層接線**
+隤踵 `/`?/knowledge`?/prompts` ?嚗??桀???mock ??亙?梁 shell嚗蒂鋆? loading / empty / error ???鞈???嚗迨?挾銝?摰??券 CRUD嚗?閬??????亙皞???
+- [x] **Step 8: 撽??垢撉冽???惜?亦?**
 
 Run: `npm run dev`
-Expected: `http://localhost:3000` 顯示首頁 `/` 聊天入口與 Sidebar 導航，`/knowledge`、`/prompts` 可正常進入，Vitest 不再因缺少 `src/test/setup.ts` 失敗。
-
+Expected: `http://localhost:3000` 憿舐內擐? `/` ?予?亙??Sidebar 撠嚗/knowledge`?/prompts` ?舀迤撣賊脣嚗itest 銝??撩撠?`src/test/setup.ts` 憭望???
 - [ ] **Step 9: Commit**
 
 ```powershell
@@ -1242,60 +1233,46 @@ git commit -m "feat: wire frontend data layer onto existing UI shell"
 
 ---
 
-## Task 9: 前端功能頁完成
-
+## Task 9: ?垢?????
 **Files:**
 - Modify: `frontend/src/app/page.tsx`
 - Modify: `frontend/src/app/knowledge/page.tsx`
 - Modify: `frontend/src/app/prompts/page.tsx`
 - Create: `frontend/src/app/endpoints/page.tsx`
 - Create: `frontend/src/app/models/page.tsx`
-- Create: 各頁面的子元件
+- Create: ???Ｙ?摮?隞?
+- [x] **Step 1: 擐? `/` ?予撌乩?????*
 
-- [ ] **Step 1: 首頁 `/` 聊天工作區功能化**
+?嚗?- 撌血甇瑕撠店?”?亙 chat sessions API
+- 銝餃?閰勗?憿舐內閮瘞?部??markdown 皜脫?
+- ?璅∪? / Prompt / ?亥?摨恍??亙撖阡?鞈?
+- 摨頛詨獢葡??`/api/chat` SSE 銝脫?
+- 憿舐內靘?撘?葉??/ 蝛箇霅澈?航炊??
 
-功能：
-- 左側歷史對話列表接入 chat sessions API
-- 主對話區顯示訊息氣泡與 markdown 渲染
-- 頂部模型 / Prompt / 知識庫選擇器接入實際資料
-- 底部輸入框串接 `/api/chat` SSE 串流
-- 顯示來源引用與中斷 / 空知識庫錯誤處理
+- [x] **Step 2: ?亥?摨怎恣????*
 
-- [ ] **Step 2: 知識庫管理頁面**
+?嚗?- ?亥?摨怠?銵刻???
+- 撱箇??亥?摨怠?閰望?嚗身摰?蝔晞hunk_size?hunk_overlap?mbedding_model嚗?- ?辣?”???喋?扎??啁揣撘?- 憿舐內 ready / indexing / error ???
+- [x] **Step 3: Prompt 璅⊥?**
 
-功能：
-- 知識庫列表與搜尋
-- 建立知識庫對話框（設定名稱、chunk_size、chunk_overlap、embedding_model）
-- 文件列表、上傳、刪除、重新索引
-- 顯示 ready / indexing / error 狀態
+?嚗?- 璅⊥?”??撠?- 撱箇? / 蝺刻摩璅⊥
+- system prompt 蝺刻摩??+ user prompt template + temperature slider
+- 憿舐內 `{context}`?{question}` 雿?蝚西牧?? default template ???
+- [x] **Step 4: API 蝡舫?蝞∠??**
 
-- [ ] **Step 3: Prompt 模板頁面**
+?嚗?- 蝡舫??”嚗?耦撘?憿舐內?迂?PI Key????
+- 撱箇?蝡舫?撠店獢??豢??亥?摨怒rompt 璅⊥?芋??
+- API Key 銴ˊ??
+- 雿輻蝭?蝔?蝣潮＊蝷綽?curl嚗?
+- [x] **Step 5: 璅∪?蝞∠??**
 
-功能：
-- 模板列表與搜尋
-- 建立 / 編輯模板
-- system prompt 編輯器 + user prompt template + temperature slider
-- 顯示 `{context}`、`{question}` 佔位符說明與 default template 狀態
+?嚗?- Ollama 璅∪??”嚗＊蝷箏?蝔晞之撠???
+- ???唳芋??頛詨璅∪??迂 + ?脣漲璇?
+- ?芷璅∪?
 
-- [ ] **Step 4: API 端點管理頁面**
+- [x] **Step 6: ?券??Ｗ??賡?霅?*
 
-功能：
-- 端點列表（卡片形式，顯示名稱、API Key、狀態）
-- 建立端點對話框（選擇知識庫、Prompt 模板、模型）
-- API Key 複製按鈕
-- 使用範例程式碼顯示（curl）
-
-- [ ] **Step 5: 模型管理頁面**
-
-功能：
-- Ollama 模型列表（顯示名稱、大小、類型）
-- 拉取新模型（輸入模型名稱 + 進度條）
-- 刪除模型
-
-- [ ] **Step 6: 全頁面功能驗證**
-
-在瀏覽器中逐一測試首頁 `/`、`/knowledge`、`/prompts`、`/models`、`/endpoints` 的 CRUD 功能與互動；適用的頁面補 Vitest 測試，至少涵蓋 API helper、關鍵 UI state 與互動流程。
-
+?函汗?其葉??皜祈岫擐? `/`?/knowledge`?/prompts`?/models`?/endpoints` ??CRUD ??????拍???Ｚ? Vitest 皜祈岫嚗撠項??API helper????UI state ????蝔?
 - [ ] **Step 7: Commit**
 
 ```powershell
@@ -1305,15 +1282,13 @@ git commit -m "feat: complete frontend functionality on existing chat-first shel
 
 ---
 
-## Task 10: Docker 部署與最終驗證
-
+## Task 10: Docker ?函蔡??蝯?霅?
 **Files:**
 - Create: `backend/Dockerfile`
 - Create: `frontend/Dockerfile`
-- Modify: `docker-compose.yml` — 最終調整
-- Create: `README.md` — 完整文件
+- Modify: `docker-compose.yml` ???蝯矽??- Create: `README.md` ??摰?辣
 
-- [ ] **Step 1: 建立 backend/Dockerfile**
+- [x] **Step 1: 撱箇? backend/Dockerfile**
 
 ```dockerfile
 FROM python:3.12-slim
@@ -1331,7 +1306,7 @@ EXPOSE 8000
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-- [ ] **Step 2: 建立 frontend/Dockerfile**
+- [x] **Step 2: 撱箇? frontend/Dockerfile**
 
 ```dockerfile
 FROM node:20-alpine AS builder
@@ -1352,27 +1327,23 @@ EXPOSE 3000
 CMD ["node", "server.js"]
 ```
 
-- [ ] **Step 3: 全服務 Docker Compose 啟動測試**
+- [x] **Step 3: ?冽???Docker Compose ??皜祈岫**
 
 ```powershell
 cd D:\workspace\playground\rag-chat
 docker compose up --build
 ```
 
-Expected: 4 個服務全部啟動，`http://localhost:3000` 顯示前端，`http://localhost:8000/api/health` 返回 OK。
+Expected: 4 ????典???`http://localhost:3000` 憿舐內?垢嚗http://localhost:8000/api/health` 餈? OK??
+- [ ] **Step 4: 蝡臬?蝡臬??賣葫閰?*
 
-- [ ] **Step 4: 端對端功能測試**
+1. ?冽芋?恣???ＹⅡ隤?Ollama 璅∪??舐嚗?閬??? llama3.2 ??nomic-embed-text嚗?2. 撱箇??亥?摨恬?閮剖? chunk_size=1000, overlap=200嚗?3. 銝銝?葫閰?.txt ?辣
+4. ?券???`/` ?予??府?亥?摨恬??潮?憿?蝣箄? SSE 銝脫???甇?虜
+5. 撱箇? API 蝡舫?嚗蝙??curl ?澆?亥岷 API
 
-1. 在模型管理頁面確認 Ollama 模型可用（必要時拉取 llama3.2 和 nomic-embed-text）
-2. 建立知識庫（設定 chunk_size=1000, overlap=200）
-3. 上傳一個測試 .txt 文件
-4. 在首頁 `/` 聊天頁選擇該知識庫，發送問題，確認 SSE 串流回應正常
-5. 建立 API 端點，使用 curl 呼叫查詢 API
+- [x] **Step 5: ?啣神 README.md**
 
-- [ ] **Step 5: 撰寫 README.md**
-
-包含：專案介紹、功能清單、快速開始指南、開發指南、API 文件連結、技術棧說明。
-
+?嚗?獢?蝝嫘??賣??柴翰??憪????潭??PI ?辣?????銵ㄖ隤芣???
 - [ ] **Step 6: Final Commit**
 
 ```powershell
@@ -1382,17 +1353,21 @@ git commit -m "feat: docker deployment, README, and final integration"
 
 ---
 
-## 驗證計畫摘要
+## 撽?閮??
 
-| Task | 驗證方式 |
+| Task | 撽??孵? |
 |------|---------|
-| Task 1 | `GET /api/health` 返回 200 |
-| Task 2 | Alembic migration 成功，7 張表已建立 |
-| Task 3 | Schema 匯入無錯誤 |
-| Task 4 | 知識庫 CRUD + 文件上傳測試通過 |
-| Task 5 | 聊天 SSE 串流測試通過 |
-| Task 6 | API 端點查詢 + Key 驗證測試通過 |
-| Task 7 | 模型列表 + Prompt CRUD 測試通過 |
-| Task 8 | 既有前端骨架已接上 API client / providers / store，首頁 `/` 與現有頁面可正常導航與載入 |
-| Task 9 | 首頁 `/`、`/knowledge`、`/prompts`、`/models`、`/endpoints` 功能與手動驗證通過 |
-| Task 10 | Docker Compose 全服務啟動 + 端對端測試通過 |
+| Task 1 | `GET /api/health` 餈? 200 |
+| Task 2 | Alembic migration ??嚗? 撘菔”撌脣遣蝡?|
+| Task 3 | Schema ?臬?⊿隤?|
+| Task 4 | ?亥?摨?CRUD + ?辣銝皜祈岫?? |
+| Task 5 | ?予 SSE 銝脫?皜祈岫?? |
+| Task 6 | API 蝡舫??亥岷 + Key 撽?皜祈岫?? |
+| Task 7 | 璅∪??” + Prompt CRUD 皜祈岫?? |
+| Task 8 | ?Ｘ??垢撉冽撌脫銝?API client / providers / store嚗???`/` ????Ｗ甇?虜撠????|
+| Task 9 | 擐? `/`?/knowledge`?/prompts`?/models`?/endpoints` ?????霅? |
+| Task 10 | Docker Compose ?冽?????+ 蝡臬?蝡舀葫閰阡? |
+
+
+
+

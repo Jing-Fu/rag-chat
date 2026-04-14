@@ -80,3 +80,17 @@ async def test_delete_prompt_returns_no_content(monkeypatch) -> None:
         response = await client.delete(f"/api/prompts/{uuid.uuid4()}")
 
     assert response.status_code == 204
+
+
+async def test_delete_prompt_maps_service_error(monkeypatch) -> None:
+    async def _mock_delete(self, prompt_id):
+        raise ServiceError("Cannot delete the final prompt template", status_code=409)
+
+    monkeypatch.setattr("app.services.prompt_service.PromptService.delete_prompt", _mock_delete)
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await client.delete(f"/api/prompts/{uuid.uuid4()}")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Cannot delete the final prompt template"

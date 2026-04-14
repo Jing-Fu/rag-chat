@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 import ollama as ollama_client
 
 from app.config import get_settings
@@ -11,21 +13,81 @@ class ModelService:
         settings = get_settings()
         self.client = ollama_client.AsyncClient(host=settings.ollama_base_url)
 
+    @staticmethod
+    def _get_value(payload, *keys: str):
+        for key in keys:
+            if isinstance(payload, dict) and key in payload:
+                value = payload[key]
+            else:
+                value = getattr(payload, key, None)
+
+            if value is not None:
+                return value
+
+        return None
+
+    @classmethod
+    def _get_models(cls, response) -> list:
+        models = cls._get_value(response, "models")
+        if isinstance(models, list):
+            return models
+        if models is None:
+            return []
+        return list(models)
+
+    @staticmethod
+    def _serialize_modified_at(value: datetime | str | None) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return str(value)
+
+    @classmethod
+    def _infer_model_type(cls, model) -> str:
+        model_name = str(cls._get_value(model, "model", "name") or "").lower()
+        details = cls._get_value(model, "details")
+        family = str(cls._get_value(details, "family") or "").lower()
+        raw_families = cls._get_value(details, "families")
+        families = []
+
+        if isinstance(raw_families, list):
+            families = [str(item).lower() for item in raw_families]
+
+        identifiers = [model_name, family, *families]
+        if any(
+            "embed" in identifier or "bert" in identifier or identifier.startswith("bge")
+            for identifier in identifiers
+            if identifier
+        ):
+            return "embed"
+
+        return "llm"
+
     async def list_models(self) -> list[dict]:
         try:
             response = await self.client.list()
         except Exception as exc:
             raise ServiceError(f"Ollama is unavailable: {exc}", status_code=503) from exc
 
-        return [
-            {
-                "name": model["name"],
-                "size": model.get("size"),
-                "modified_at": model.get("modified_at"),
-                "model_type": "embed" if "embed" in model["name"].lower() else "llm",
-            }
-            for model in response.get("models", [])
-        ]
+        models: list[dict] = []
+        for model in self._get_models(response):
+            model_name = self._get_value(model, "model", "name")
+            if not isinstance(model_name, str) or not model_name:
+                raise ServiceError("Unexpected Ollama model payload", status_code=502)
+
+            models.append(
+                {
+                    "name": model_name,
+                    "size": self._get_value(model, "size"),
+                    "modified_at": self._serialize_modified_at(
+                        self._get_value(model, "modified_at")
+                    ),
+                    "model_type": self._infer_model_type(model),
+                }
+            )
+
+        return models
 
     async def pull_model(self, model_name: str):
         try:

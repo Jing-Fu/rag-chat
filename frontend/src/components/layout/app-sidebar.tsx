@@ -1,8 +1,18 @@
 "use client";
 
-import { Cpu, Database, Link as LinkIcon, MessageSquare, PenTool, Plus, Settings } from "lucide-react";
+import {
+  Cpu,
+  Database,
+  Link as LinkIcon,
+  Loader2,
+  MessageSquare,
+  PenTool,
+  Plus,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -12,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ChatSessionSummary } from "@/lib/api";
+import { useChatUiStore } from "@/stores";
 
 export type AppSidebarProps = {
   sessions?: ChatSessionSummary[];
@@ -20,6 +31,8 @@ export type AppSidebarProps = {
   selectedSessionId?: string | null;
   onSelectSession?: (sessionId: string) => void;
   onNewChat?: () => void;
+  onDeleteSession?: (sessionId: string) => void;
+  deletingSessionId?: string | null;
 };
 
 export function AppSidebar({
@@ -29,16 +42,32 @@ export function AppSidebar({
   selectedSessionId = null,
   onSelectSession,
   onNewChat,
+  onDeleteSession,
+  deletingSessionId = null,
 }: AppSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const hasSessions = sessions.length > 0;
+  const resetSessionSelection = useChatUiStore((state) => state.resetSessionSelection);
+
+  function handleNewChatClick() {
+    if (onNewChat) {
+      onNewChat();
+    } else {
+      resetSessionSelection();
+    }
+
+    if (pathname !== "/") {
+      router.push("/");
+    }
+  }
 
   return (
     <aside className="hidden lg:flex w-[260px] h-full bg-[#111111] dark:bg-[#111111] border-r border-[#222] flex-col text-sm flex-shrink-0 text-white">
       <div className="p-3">
         <button
           type="button"
-          onClick={onNewChat}
+          onClick={handleNewChatClick}
           className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#222] text-white hover:bg-[#2a2a2a] transition-colors font-medium"
         >
           <span className="flex items-center gap-2">
@@ -63,23 +92,45 @@ export function AppSidebar({
           {!isSessionsLoading &&
             !sessionsError &&
             sessions.map((session) => (
-              <button
+              <div
                 key={session.id}
-                type="button"
-                onClick={() => onSelectSession?.(session.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left ${
                   selectedSessionId === session.id
                     ? "bg-[#2a2a2a] text-white"
                     : "hover:bg-[#222] text-white/80 hover:text-white"
                 }`}
               >
-                <MessageSquare className="w-4 h-4 shrink-0 opacity-70" />
-                <span className="truncate">
-                  {session.message_count > 0
-                    ? `Session ${session.id.slice(0, 8)} · ${session.message_count} msgs`
-                    : `Session ${session.id.slice(0, 8)}`}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectSession?.(session.id)}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                >
+                  <MessageSquare className="w-4 h-4 shrink-0 opacity-70" />
+                  <span className="truncate">
+                    {session.message_count > 0
+                      ? `Session ${session.id.slice(0, 8)} · ${session.message_count} msgs`
+                      : `Session ${session.id.slice(0, 8)}`}
+                  </span>
+                </button>
+                {onDeleteSession && (
+                  <button
+                    type="button"
+                    aria-label={`Delete session ${session.id.slice(0, 8)}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDeleteSession(session.id);
+                    }}
+                    disabled={deletingSessionId === session.id}
+                    className="rounded-md p-1 text-white/40 transition hover:bg-white/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {deletingSessionId === session.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
+              </div>
             ))}
         </div>
       </ScrollArea>

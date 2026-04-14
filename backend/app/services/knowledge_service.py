@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
+from shutil import rmtree
 
 from fastapi import UploadFile
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.api_endpoint import ApiEndpoint
+from app.models.chat import ChatSession
 from app.config import get_settings
 from app.core.embeddings import generate_embeddings
 from app.core.ingestion import SUPPORTED_FILE_TYPES, extract_text, split_text
@@ -86,8 +89,12 @@ class KnowledgeService:
         kb = await self.db.get(KnowledgeBase, kb_id)
         if kb is None:
             raise ServiceError("Knowledge base not found", status_code=404)
+
+        await self.db.execute(delete(ApiEndpoint).where(ApiEndpoint.kb_id == kb_id))
+        await self.db.execute(delete(ChatSession).where(ChatSession.kb_id == kb_id))
         await self.db.delete(kb)
         await self.db.commit()
+        self._delete_knowledge_base_files(kb_id)
 
     async def upload_document(self, kb_id: uuid.UUID, file: UploadFile) -> DocumentResponse:
         kb = await self.db.get(KnowledgeBase, kb_id)
@@ -145,11 +152,7 @@ class KnowledgeService:
         if kb is None:
             raise ServiceError("Knowledge base not found", status_code=404)
 
-        stmt = (
-            select(Document)
-            .where(Document.kb_id == kb_id)
-            .order_by(Document.created_at.desc())
-        )
+        stmt = select(Document).where(Document.kb_id == kb_id).order_by(Document.created_at.desc())
         docs = (await self.db.execute(stmt)).scalars().all()
         return [DocumentResponse.model_validate(doc) for doc in docs]
 
@@ -239,3 +242,8 @@ class KnowledgeService:
 
     def _document_path(self, kb_id: uuid.UUID, doc_id: uuid.UUID, file_type: str) -> Path:
         return self.settings.upload_dir / str(kb_id) / f"{doc_id}{file_type}"
+
+    def _delete_knowledge_base_files(self, kb_id: uuid.UUID) -> None:
+        kb_path = self.settings.upload_dir / str(kb_id)
+        if kb_path.exists():
+            rmtree(kb_path, ignore_errors=True)

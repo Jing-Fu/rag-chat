@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.2"
     ollama_embedding_model: str = "nomic-embed-text"
 
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     upload_max_size_mb: int = 50
     upload_dir: Path = Field(default=Path("./uploads"))
@@ -32,7 +32,9 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        origins = {origin.strip() for origin in self.cors_origins.split(",") if origin.strip()}
+        origins.update({"http://localhost:3000", "http://127.0.0.1:3000"})
+        return sorted(origins)
 
 
 @lru_cache

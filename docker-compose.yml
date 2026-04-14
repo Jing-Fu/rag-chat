@@ -16,11 +16,18 @@ services:
       retries: 5
 
   ollama:
-    image: ollama/ollama
+    image: ollama/ollama:latest
     ports:
       - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - C:\Users\fujin\.ollama:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   backend:
     build:
@@ -35,14 +42,16 @@ services:
       POSTGRES_USER: rag_user
       POSTGRES_PASSWORD: change_me
       OLLAMA_BASE_URL: http://ollama:11434
-      OLLAMA_MODEL: llama3.2
-      OLLAMA_EMBEDDING_MODEL: nomic-embed-text
+      OLLAMA_MODEL: gemma4:e4b
+      OLLAMA_EMBEDDING_MODEL: nomic-embed-text:latest
       CORS_ORIGINS: http://localhost:3000
       UPLOAD_MAX_SIZE_MB: 50
       UPLOAD_DIR: /app/uploads
     depends_on:
       postgres:
         condition: service_healthy
+      ollama:
+        condition: service_started
     volumes:
       - upload_data:/app/uploads
 
@@ -59,5 +68,4 @@ services:
 
 volumes:
   pg_data:
-  ollama_data:
   upload_data:
