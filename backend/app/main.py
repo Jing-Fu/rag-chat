@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.knowledge import router as knowledge_router
 from app.config import get_settings
 
 settings = get_settings()
@@ -33,3 +34,6 @@ app.add_middleware(
 @app.get("/api/health")
 async def health_check() -> dict[str, str]:
     return {"status": "ok"}
+
+
+app.include_router(knowledge_router)
