@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.chat import router as chat_router
 from app.api.endpoints import router as endpoints_router
 from app.api.knowledge import router as knowledge_router
+from app.api.models import router as models_router
+from app.api.prompts import router as prompts_router
 from app.config import get_settings
 
 settings = get_settings()
@@ -41,3 +43,5 @@ async def health_check() -> dict[str, str]:
 app.include_router(knowledge_router)
 app.include_router(chat_router)
 app.include_router(endpoints_router)
+app.include_router(models_router)
+app.include_router(prompts_router)
