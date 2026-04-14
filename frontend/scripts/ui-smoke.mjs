@@ -41,8 +41,8 @@ async function runKnowledgeFlow(page, filePath) {
   await page.getByPlaceholder("Description").fill("Playwright smoke knowledge base");
   await page.getByRole("button", { name: "Create" }).click();
 
-  await page.getByRole("cell", { name: kbName }).waitFor({ timeout: 30000 });
-  await page.getByText(`Documents · ${kbName}`).waitFor({ timeout: 30000 });
+  await page.getByText(kbName).first().waitFor({ timeout: 30000 });
+  await page.getByRole("button", { name: "Upload" }).waitFor({ timeout: 30000 });
 
   await page.locator('input[type="file"]').setInputFiles(filePath);
   await page.getByText(uploadFileName).waitFor({ timeout: 180000 });
@@ -56,6 +56,7 @@ async function runPromptFlow(page) {
   await page.getByRole("button", { name: "New Template" }).click();
   await page.getByPlaceholder("Template name").fill(promptName);
   await page.getByPlaceholder("System prompt").fill("You are a concise smoke test assistant.");
+  await page.getByRole("button", { name: /Advanced Retrieval Template/i }).click();
   await page
     .getByPlaceholder("User prompt template")
     .fill("根據以下資料回答問題：\n\n{context}\n\n問題：{question}");
@@ -97,23 +98,29 @@ async function runEndpointFlow(page) {
   await page.goto(`${baseUrl}/endpoints`, { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "API Endpoints" }).waitFor();
 
-  const createPanel = page.getByRole("heading", { name: "Create Endpoint" }).locator("xpath=..");
-  await createPanel.getByPlaceholder("Endpoint name").fill(endpointName);
-  await createPanel.locator("select").nth(0).selectOption({ label: kbName });
-  await createPanel.locator("select").nth(1).selectOption({ label: promptName });
-  await pickEndpointModel(createPanel);
-  await createPanel.getByRole("button", { name: "Create Endpoint" }).click();
+  await page.getByPlaceholder("Endpoint name").fill(endpointName);
+  await page.locator("select").nth(0).selectOption({ label: kbName });
+  await page.locator("select").nth(1).selectOption({ label: promptName });
+  await pickEndpointModel(page);
+  await page.getByRole("button", { name: "Create Endpoint" }).click();
 
-  await page.getByRole("heading", { name: endpointName }).waitFor({ timeout: 30000 });
+  await page.getByText(endpointName).first().waitFor({ timeout: 30000 });
 
-  const queryPanel = page.getByRole("heading", { name: "Query Endpoint" }).locator("xpath=..");
+  const queryPanel = page.locator("section", { has: page.getByRole("heading", { name: "Query Workspace" }) });
   await queryPanel.locator("select").selectOption({ label: endpointName });
-  await queryPanel.getByPlaceholder("Ask a question...").fill("請用一句話說明這份知識庫文件的主題");
+  await queryPanel.getByPlaceholder("Ask a question").fill("請用一句話說明這份知識庫文件的主題");
   await queryPanel.getByRole("button", { name: "Run Query" }).click();
 
-  const answerPanel = queryPanel.getByText("Answer");
+  const answerPanel = queryPanel.getByText("response", { exact: true });
   await answerPanel.waitFor({ timeout: 240000 });
-  const answerText = await waitForText(answerPanel.locator("xpath=following-sibling::p[1]"), 240000);
+  await page.waitForFunction(() => {
+    const heading = Array.from(document.querySelectorAll("h2")).find((element) => element.textContent?.trim() === "Query Workspace");
+    const section = heading?.closest("section");
+    const pre = section?.querySelector("pre");
+    const text = (pre?.textContent ?? "").trim();
+    return text.length > 0 && text !== "No response yet.";
+  }, undefined, { timeout: 240000 });
+  const answerText = await waitForText(queryPanel.locator("pre"), 240000);
   assert.match(answerText, /smoke|RAG|本地端|平台/i, "Endpoint answer did not reflect uploaded knowledge");
 }
 
@@ -127,7 +134,7 @@ async function selectKnowledgeBaseForChat(page) {
 async function runChatFlow(page) {
   logStep("Chat flow");
   await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded" });
-  await page.getByText("Data ready").waitFor({ timeout: 30000 });
+  await page.getByText("Workspace ready").waitFor({ timeout: 30000 });
 
   const header = page.locator("header").first();
   const modelTriggerText = await header.getByRole("button").first().textContent();
@@ -161,7 +168,7 @@ async function runChatFlow(page) {
 async function runModelsFlow(page) {
   logStep("Models flow");
   await page.goto(`${baseUrl}/models`, { waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "Ollama Models" }).waitFor();
+  await page.getByRole("heading", { name: "Models" }).waitFor();
   await page.waitForFunction(() => {
     return Array.from(document.querySelectorAll("td")).some((element) => {
       const text = element.textContent ?? "";
@@ -175,7 +182,10 @@ async function main() {
   const filePath = join(tempDir, uploadFileName);
   await writeFile(filePath, uploadFileContents, "utf8");
 
-  const browser = await chromium.launch({ headless });
+  const browser = await chromium.launch({
+    headless,
+    args: ["--disable-web-security", "--disable-features=IsolateOrigins,site-per-process"],
+  });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
 

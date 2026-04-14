@@ -28,7 +28,7 @@ export function ChatMessageList({ messages, isStreaming = false }: ChatMessageLi
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-8 pb-32">
+    <div className="mx-auto w-full max-w-4xl space-y-8 px-0 py-8 pb-16 sm:px-4">
       {messages.map((message) => {
         const isUser = message.role === "user";
         const sources = getSources(message);
@@ -40,10 +40,10 @@ export function ChatMessageList({ messages, isStreaming = false }: ChatMessageLi
             className={`flex ${isUser ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${
+              className={`max-w-[82%] text-sm leading-6 ${
                 isUser
-                  ? "bg-foreground text-background"
-                  : "bg-card border border-border text-foreground"
+                  ? "rounded-full bg-foreground px-5 py-3 text-background"
+                  : "rounded-[12px] border border-border bg-card px-5 py-4 text-foreground"
               }`}
             >
               {isThinking ? (
@@ -54,9 +54,9 @@ export function ChatMessageList({ messages, isStreaming = false }: ChatMessageLi
                 <p className="whitespace-pre-wrap break-words">{message.content}</p>
               )}
               {!isUser && sources.length > 0 && (
-                <div className="mt-3 border-t border-border/80 pt-3 text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground/90">Sources</p>
-                  <ul className="mt-1 space-y-1">
+                <div className="mt-4 rounded-[12px] border border-border bg-muted px-3 py-3 text-xs text-muted-foreground">
+                  <p className="font-medium text-foreground">Sources</p>
+                  <ul className="mt-2 space-y-1.5">
                     {sources.map((source) => (
                       <li key={`${source.chunk_id}-${source.chunk_index}`} className="truncate">
                         {source.filename} · chunk {source.chunk_index} ·{" "}
@@ -72,7 +72,7 @@ export function ChatMessageList({ messages, isStreaming = false }: ChatMessageLi
       })}
 
       {isStreaming && (
-        <div className="text-xs text-muted-foreground animate-pulse pl-2">Streaming response...</div>
+        <div className="pl-2 text-xs text-muted-foreground animate-pulse">Streaming response...</div>
       )}
     </div>
   );

@@ -17,7 +17,7 @@ export function ChatInput({
   onSubmit,
   disabled = false,
   isSending = false,
-  placeholder = "Message RAG Assistant...",
+  placeholder = "Ask anything about your local knowledge",
   errorMessage = null,
   rows = 1,
 }: ChatInputProps) {
@@ -36,36 +36,36 @@ export function ChatInput({
 
   return (
     <div className="w-full">
-      <div className="relative rounded-3xl bg-[#f4f4f4] dark:bg-[#2f2f2f] flex flex-col p-1.5 shadow-sm max-w-3xl mx-auto w-full">
+      <div className="surface-prompt mx-auto flex w-full max-w-4xl flex-col px-3 py-2">
         <textarea
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled || isSending}
           placeholder={placeholder}
-          className="w-full bg-transparent resize-none outline-none focus:ring-0 text-foreground px-4 py-3 min-h-[52px] max-h-[200px] text-[15px] disabled:opacity-50"
+          className="min-h-[52px] max-h-[200px] w-full resize-none bg-transparent px-4 py-3 text-[15px] text-foreground outline-none placeholder:text-neutral-400 disabled:opacity-50"
           rows={rows}
         />
-        <div className="flex items-center justify-between px-2 pb-1.5">
+        <div className="flex items-center justify-between px-2 pb-1">
           <div className="flex items-center gap-1">
             <button
               type="button"
               disabled
-              className="p-2 rounded-full text-muted-foreground/60 cursor-not-allowed"
+              className="cursor-not-allowed rounded-full p-2 text-muted-foreground/60"
               title="File upload is managed in Knowledge page"
             >
               <Paperclip className="w-5 h-5" />
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <div className="text-xs text-muted-foreground hidden sm:block mr-2 font-medium">
+            <div className="mr-2 hidden text-xs text-muted-foreground sm:block">
               Use shift + return for new line
             </div>
             <button
               type="button"
               onClick={onSubmit}
               disabled={!canSubmit}
-              className="w-8 h-8 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-black text-white transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-5 h-5" />}
             </button>
@@ -73,7 +73,7 @@ export function ChatInput({
         </div>
       </div>
       {errorMessage && (
-        <p className="mt-2 text-xs text-red-300 text-center" role="alert">
+        <p className="mt-2 text-center text-xs text-red-600" role="alert">
           {errorMessage}
         </p>
       )}

@@ -3,24 +3,20 @@
 import {
   Cpu,
   Database,
+  Menu,
   Link as LinkIcon,
   Loader2,
   MessageSquare,
   PenTool,
   Plus,
-  Settings,
   Trash2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import type { ChatSessionSummary } from "@/lib/api";
 import { useChatUiStore } from "@/stores";
 
@@ -35,6 +31,24 @@ export type AppSidebarProps = {
   deletingSessionId?: string | null;
 };
 
+const routeItems = [
+  { href: "/", label: "Chat", icon: MessageSquare },
+  { href: "/knowledge", label: "Knowledge Bases", icon: Database },
+  { href: "/models", label: "Models", icon: Cpu },
+  { href: "/prompts", label: "Prompt Templates", icon: PenTool },
+  { href: "/endpoints", label: "API Endpoints", icon: LinkIcon },
+];
+
+function getRouteLabel(pathname: string) {
+  return routeItems.find((item) => item.href === pathname)?.label ?? "RAG Workspace";
+}
+
+function getSessionLabel(session: ChatSessionSummary) {
+  return session.message_count > 0
+    ? `Session ${session.id.slice(0, 8)} · ${session.message_count} msgs`
+    : `Session ${session.id.slice(0, 8)}`;
+}
+
 export function AppSidebar({
   sessions = [],
   isSessionsLoading = false,
@@ -47,6 +61,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const hasSessions = sessions.length > 0;
   const resetSessionSelection = useChatUiStore((state) => state.resetSessionSelection);
 
@@ -60,140 +75,200 @@ export function AppSidebar({
     if (pathname !== "/") {
       router.push("/");
     }
+
+    setMobileMenuOpen(false);
+  }
+
+  function handleNavigate() {
+    setMobileMenuOpen(false);
   }
 
   return (
-    <aside className="hidden lg:flex w-[260px] h-full bg-[#111111] dark:bg-[#111111] border-r border-[#222] flex-col text-sm flex-shrink-0 text-white">
-      <div className="p-3">
+    <>
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-white/95 px-5 py-4 backdrop-blur lg:hidden">
+        <div>
+          <p className="mono-label">local rag</p>
+          <p className="display-title mt-1 text-lg text-foreground">{getRouteLabel(pathname)}</p>
+        </div>
         <button
           type="button"
-          onClick={handleNewChatClick}
-          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#222] text-white hover:bg-[#2a2a2a] transition-colors font-medium"
+          aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          className="inline-flex size-10 items-center justify-center rounded-full border border-input bg-card text-foreground"
         >
-          <span className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            New Chat
-          </span>
+          {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </button>
       </div>
 
-      <ScrollArea className="flex-1 px-3">
-        <div className="pb-4">
-          <div className="text-xs font-semibold text-white/50 px-3 py-2 pb-1">Sessions</div>
-          {isSessionsLoading && (
-            <p className="px-3 py-2 text-xs text-white/60">Loading chat sessions...</p>
-          )}
-          {!isSessionsLoading && sessionsError && (
-            <p className="px-3 py-2 text-xs text-red-300">{sessionsError}</p>
-          )}
-          {!isSessionsLoading && !sessionsError && !hasSessions && (
-            <p className="px-3 py-2 text-xs text-white/60">No chat sessions yet.</p>
-          )}
-          {!isSessionsLoading &&
-            !sessionsError &&
-            sessions.map((session) => (
-              <div
-                key={session.id}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left ${
-                  selectedSessionId === session.id
-                    ? "bg-[#2a2a2a] text-white"
-                    : "hover:bg-[#222] text-white/80 hover:text-white"
-                }`}
+      {mobileMenuOpen ? (
+        <div className="fixed inset-0 z-40 bg-white px-5 py-5 lg:hidden">
+          <div className="flex h-full flex-col gap-6">
+            <div className="flex items-start justify-between border-b border-border pb-5">
+              <div>
+                <p className="mono-label">workspace</p>
+                <p className="display-title mt-2 text-2xl text-foreground">RAG Workspace</p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close navigation"
+                onClick={() => setMobileMenuOpen(false)}
+                className="inline-flex size-10 items-center justify-center rounded-full border border-input bg-card text-foreground"
               >
-                <button
-                  type="button"
-                  onClick={() => onSelectSession?.(session.id)}
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                >
-                  <MessageSquare className="w-4 h-4 shrink-0 opacity-70" />
-                  <span className="truncate">
-                    {session.message_count > 0
-                      ? `Session ${session.id.slice(0, 8)} · ${session.message_count} msgs`
-                      : `Session ${session.id.slice(0, 8)}`}
-                  </span>
-                </button>
-                {onDeleteSession && (
-                  <button
-                    type="button"
-                    aria-label={`Delete session ${session.id.slice(0, 8)}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onDeleteSession(session.id);
-                    }}
-                    disabled={deletingSessionId === session.id}
-                    className="rounded-md p-1 text-white/40 transition hover:bg-white/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {deletingSessionId === session.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </button>
-                )}
-              </div>
-            ))}
-        </div>
-      </ScrollArea>
-
-      <div className="p-3 border-t border-[#222] mt-auto">
-        <DropdownMenu>
-          <DropdownMenuTrigger className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-[#222] transition-colors text-white/80 hover:text-white outline-none">
-            <div className="flex items-center gap-3 truncate">
-              <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shrink-0 text-white font-medium text-xs">
-                R
-              </div>
-              <div className="text-left truncate">RAG Workspace</div>
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <Settings className="w-4 h-4 shrink-0 text-white/50" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[230px] border-[#222] bg-[#111111] text-white">
-            <DropdownMenuItem className="p-0">
-              <Link
-                href="/knowledge"
-                className={`flex items-center gap-2 cursor-pointer py-2 px-2 w-full rounded-sm ${
-                  pathname === "/knowledge" ? "bg-[#222] text-white" : "hover:bg-[#222] text-white/80"
-                }`}
-              >
-                <Database className="w-4 h-4 text-white/70" />
-                Knowledge Bases
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="p-0">
-              <Link
-                href="/models"
-                className={`flex items-center gap-2 cursor-pointer py-2 px-2 w-full rounded-sm ${
-                  pathname === "/models" ? "bg-[#222] text-white" : "hover:bg-[#222] text-white/80"
-                }`}
-              >
-                <Cpu className="w-4 h-4 text-white/70" />
-                Ollama Models
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="p-0">
-              <Link
-                href="/prompts"
-                className={`flex items-center gap-2 cursor-pointer py-2 px-2 w-full rounded-sm ${
-                  pathname === "/prompts" ? "bg-[#222] text-white" : "hover:bg-[#222] text-white/80"
-                }`}
-              >
-                <PenTool className="w-4 h-4 text-white/70" />
-                Prompt Templates
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="p-0">
-              <Link
-                href="/endpoints"
-                className={`flex items-center gap-2 cursor-pointer py-2 px-2 w-full rounded-sm ${
-                  pathname === "/endpoints" ? "bg-[#222] text-white" : "hover:bg-[#222] text-white/80"
-                }`}
-              >
-                <LinkIcon className="w-4 h-4 text-white/70" />
-                API Endpoints
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </aside>
+
+            <button
+              type="button"
+              onClick={handleNewChatClick}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-neutral-200 px-4 py-3 text-sm font-medium text-neutral-900"
+            >
+              <Plus className="h-4 w-4" />
+              New Chat
+            </button>
+
+            <div className="space-y-2">
+              {routeItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={handleNavigate}
+                    className={`flex items-center gap-3 rounded-full px-4 py-3 text-sm transition-colors ${
+                      isActive ? "bg-neutral-200 text-neutral-900" : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="min-h-0 flex-1 border-t border-border pt-5">
+              <p className="mono-label mb-3">sessions</p>
+              <ScrollArea className="h-full pr-1">
+                <div className="space-y-2 pb-6">
+                  {isSessionsLoading ? <p className="muted-copy px-1">Loading chat sessions...</p> : null}
+                  {!isSessionsLoading && sessionsError ? <p className="text-sm text-red-600">{sessionsError}</p> : null}
+                  {!isSessionsLoading && !sessionsError && !hasSessions ? (
+                    <p className="muted-copy px-1">No chat sessions yet.</p>
+                  ) : null}
+                  {!isSessionsLoading && !sessionsError && sessions.map((session) => (
+                    <div key={session.id} className="flex items-center gap-2 rounded-full border border-border px-3 py-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectSession?.(session.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
+                      >
+                        <MessageSquare className="h-4 w-4 shrink-0 text-neutral-400" />
+                        <span className="truncate text-neutral-700">{getSessionLabel(session)}</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <aside className="hidden w-[280px] shrink-0 border-r border-border bg-white lg:flex">
+        <div className="flex min-h-screen w-full flex-col px-4 py-5">
+          <div className="border-b border-border pb-5">
+            <p className="mono-label">local rag</p>
+            <p className="display-title mt-2 text-2xl text-foreground">RAG Workspace</p>
+            <p className="mt-2 text-sm text-muted-foreground">Grounded chat, local models, and retrieval operations.</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleNewChatClick}
+            className="mt-5 inline-flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-neutral-200 px-4 py-3 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-300"
+          >
+            <Plus className="h-4 w-4" />
+            New Chat
+          </button>
+
+          <nav className="mt-6 space-y-2">
+            {routeItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-full px-4 py-3 text-sm transition-colors ${
+                    isActive ? "bg-neutral-200 text-neutral-900" : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="mt-8 min-h-0 flex-1 border-t border-border pt-5">
+            <p className="mono-label mb-3">sessions</p>
+            <ScrollArea className="h-[calc(100vh-23rem)] pr-1">
+              <div className="space-y-2 pb-4">
+                {isSessionsLoading ? <p className="muted-copy px-1">Loading chat sessions...</p> : null}
+                {!isSessionsLoading && sessionsError ? <p className="text-sm text-red-600">{sessionsError}</p> : null}
+                {!isSessionsLoading && !sessionsError && !hasSessions ? (
+                  <p className="muted-copy px-1">No chat sessions yet.</p>
+                ) : null}
+                {!isSessionsLoading &&
+                  !sessionsError &&
+                  sessions.map((session) => {
+                    const isSelected = selectedSessionId === session.id;
+
+                    return (
+                      <div
+                        key={session.id}
+                        className={`flex items-center gap-2 rounded-full border px-3 py-2 transition-colors ${
+                          isSelected ? "border-neutral-300 bg-neutral-100" : "border-border bg-card hover:bg-neutral-50"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => onSelectSession?.(session.id)}
+                          className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
+                        >
+                          <MessageSquare className="h-4 w-4 shrink-0 text-neutral-400" />
+                          <span className={`truncate ${isSelected ? "text-neutral-900" : "text-neutral-700"}`}>
+                            {getSessionLabel(session)}
+                          </span>
+                        </button>
+                        {onDeleteSession ? (
+                          <button
+                            type="button"
+                            aria-label={`Delete session ${session.id.slice(0, 8)}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onDeleteSession(session.id);
+                            }}
+                            disabled={deletingSessionId === session.id}
+                            className="inline-flex size-8 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {deletingSessionId === session.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }

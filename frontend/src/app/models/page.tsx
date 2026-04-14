@@ -5,6 +5,9 @@ import { Cpu, Download, RefreshCw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { PageHeader } from "@/components/layout/page-header";
+import { PageSection } from "@/components/layout/page-section";
+import { Button } from "@/components/ui/button";
 import { type ApiError, modelApi, type ModelPullProgress } from "@/lib/api";
 
 function getErrorMessage(error: unknown): string {
@@ -77,139 +80,126 @@ export default function ModelsPage() {
   }, [pullProgress]);
 
   return (
-    <DashboardShell
-      header={
-        <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-background">
-          <div className="flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-foreground" />
-            <h1 className="text-lg font-semibold text-foreground">Ollama Models</h1>
-          </div>
-          <button
-            type="button"
-            onClick={() => modelsQuery.refetch()}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-secondary"
-          >
-            <RefreshCw className="w-4 h-4" />
+    <DashboardShell>
+      <PageHeader
+        icon={<Cpu className="h-4 w-4" />}
+        title="Models"
+        description="Fetch local models, inspect inventory, and keep your workspace runtime ready."
+        actions={
+          <Button type="button" variant="outline" onClick={() => modelsQuery.refetch()}>
+            <RefreshCw className="h-4 w-4" />
             Refresh
-          </button>
-        </header>
-      }
-      mainClassName="flex-1 overflow-y-auto w-full relative p-8"
-    >
-      <div className="mx-auto max-w-5xl space-y-6">
-        <section className="rounded-xl border border-border bg-card p-4">
-          <h2 className="font-semibold">Pull Model</h2>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+          </Button>
+        }
+      />
+
+      <div className="space-y-6">
+        <PageSection
+          title="Pull Model"
+          description="Fetch a local LLM or embedding model without leaving the workspace."
+        >
+          <div className="flex flex-col gap-3 sm:flex-row">
             <input
               type="text"
               value={modelNameToPull}
               onChange={(event) => setModelNameToPull(event.target.value)}
               placeholder="e.g. llama3.2 or nomic-embed-text"
-              className="flex-1 bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm"
+              className="h-11 flex-1 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             />
-            <button
+            <Button
               type="button"
               onClick={() => pullMutation.mutate(modelNameToPull.trim())}
               disabled={pullMutation.isPending || !modelNameToPull.trim()}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium disabled:opacity-60"
             >
-              <Download className="w-4 h-4" />
+              <Download className="h-4 w-4" />
               {pullMutation.isPending ? "Pulling..." : "Pull"}
-            </button>
+            </Button>
           </div>
-          {pullProgress && (
+
+          {pullProgress ? (
             <div className="mt-4">
               <p className="text-sm text-muted-foreground">{pullProgress.status ?? "In progress..."}</p>
-              {progressPercent !== null && (
-                <div className="mt-2 h-2 rounded-full bg-secondary overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-400 transition-all"
-                    style={{ width: `${progressPercent}%` }}
-                  />
+              {progressPercent !== null ? (
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-neutral-200">
+                  <div className="h-full bg-black transition-all" style={{ width: `${progressPercent}%` }} />
                 </div>
-              )}
+              ) : null}
             </div>
-          )}
-          {pullError && <p className="mt-3 text-sm text-red-300">{pullError}</p>}
-        </section>
+          ) : null}
+          {pullError ? <p className="mt-3 text-sm text-red-600">{pullError}</p> : null}
+        </PageSection>
 
-        <section className="rounded-xl border border-border bg-card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary/30 border-b border-border">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Model</th>
-                <th className="px-4 py-3 text-left font-medium">Type</th>
-                <th className="px-4 py-3 text-left font-medium">Size</th>
-                <th className="px-4 py-3 text-left font-medium">Modified</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {modelsQuery.isPending && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-5 text-muted-foreground">
-                    Loading models...
-                  </td>
+        <PageSection title="Local Inventory" description="Installed models available to chat or embed locally.">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="px-2 py-3 font-medium">Model</th>
+                  <th className="px-2 py-3 font-medium">Type</th>
+                  <th className="px-2 py-3 font-medium">Size</th>
+                  <th className="px-2 py-3 font-medium">Modified</th>
+                  <th className="px-2 py-3 text-right font-medium">Actions</th>
                 </tr>
-              )}
-              {modelsQuery.isError && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-5 text-red-300">
-                    Failed to load models: {getErrorMessage(modelsQuery.error as ApiError)}
-                  </td>
-                </tr>
-              )}
-              {!modelsQuery.isPending && !modelsQuery.isError && (modelsQuery.data ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-5 text-muted-foreground">
-                    No local models found.
-                  </td>
-                </tr>
-              )}
-              {!modelsQuery.isPending &&
-                !modelsQuery.isError &&
-                (modelsQuery.data ?? []).map((model) => (
-                  <tr key={model.name} className="hover:bg-secondary/20">
-                    <td className="px-4 py-3 font-medium">{model.name}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-md px-2 py-0.5 text-xs border ${
-                          model.model_type === "embed"
-                            ? "bg-blue-500/10 text-blue-300 border-blue-500/20"
-                            : "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
-                        }`}
-                      >
-                        {model.model_type}
-                      </span>
+              </thead>
+              <tbody>
+                {modelsQuery.isPending ? (
+                  <tr>
+                    <td colSpan={5} className="px-2 py-5 text-muted-foreground">
+                      Loading models...
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{formatBytes(model.size)}</td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {model.modified_at ? new Date(model.modified_at).toLocaleString() : "-"}
+                  </tr>
+                ) : null}
+                {modelsQuery.isError ? (
+                  <tr>
+                    <td colSpan={5} className="px-2 py-5 text-red-600">
+                      Failed to load models: {getErrorMessage(modelsQuery.error as ApiError)}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end">
-                        <button
+                  </tr>
+                ) : null}
+                {!modelsQuery.isPending && !modelsQuery.isError && (modelsQuery.data ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-2 py-5 text-muted-foreground">
+                      No local models found.
+                    </td>
+                  </tr>
+                ) : null}
+                {!modelsQuery.isPending &&
+                  !modelsQuery.isError &&
+                  (modelsQuery.data ?? []).map((model) => (
+                    <tr key={model.name} className="border-b border-border/70 last:border-b-0">
+                      <td className="px-2 py-4 font-medium text-foreground">{model.name}</td>
+                      <td className="px-2 py-4 text-muted-foreground">
+                        <span className="rounded-full border border-border px-2.5 py-1 text-xs">
+                          {model.model_type}
+                        </span>
+                      </td>
+                      <td className="px-2 py-4 text-muted-foreground">{formatBytes(model.size)}</td>
+                      <td className="px-2 py-4 text-muted-foreground">
+                        {model.modified_at ? new Date(model.modified_at).toLocaleString() : "-"}
+                      </td>
+                      <td className="px-2 py-4 text-right">
+                        <Button
                           type="button"
+                          variant="destructive"
+                          size="sm"
                           onClick={() => {
                             if (window.confirm(`Delete model '${model.name}'?`)) {
                               deleteMutation.mutate(model.name);
                             }
                           }}
                           disabled={deleteMutation.isPending}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-red-500/30 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-60"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" />
                           Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </section>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </PageSection>
       </div>
     </DashboardShell>
   );
 }
-

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Bot } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { ChatHeader } from "@/components/chat/chat-header";
@@ -17,6 +17,19 @@ import {
   promptApi,
 } from "@/lib/api";
 import { useChatUiStore } from "@/stores";
+
+const EMPTY_STATE_PROMPTS = [
+  {
+    title: "Summarize docs",
+    description: "Pull out the most important themes from the selected knowledge base.",
+    prompt: "請幫我總結這個知識庫的重要重點。",
+  },
+  {
+    title: "Explain retrieval",
+    description: "Describe how vector retrieval influences grounded answers in this workspace.",
+    prompt: "請解釋向量檢索在 RAG 流程中的角色。",
+  },
+];
 
 function getErrorMessage(error: unknown): string | null {
   if (!error) {
@@ -313,6 +326,7 @@ export default function Home() {
 
   return (
     <DashboardShell
+      mainClassName="flex flex-1 flex-col px-5 pt-0 sm:px-8 lg:px-10"
       sidebarProps={{
         sessions: sessionsQuery.data ?? [],
         isSessionsLoading: sessionsQuery.isPending,
@@ -339,89 +353,94 @@ export default function Home() {
         />
       }
       footer={
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-transparent pt-6 pb-6 px-4">
-          <ChatInput
-            value={composerValue}
-            onChange={setComposerValue}
-            onSubmit={handleSendMessage}
-            disabled={!canSend}
-            isSending={isStreaming}
-            errorMessage={streamError}
-            placeholder={
-              selectedKnowledgeBaseId
-                ? "Ask a grounded question based on the selected knowledge base..."
-                : "Select a knowledge base before sending a message..."
-            }
-          />
-          <p className="text-center text-xs text-muted-foreground mt-3">
-            RAG Platform generates answers locally. Responses may vary based on selected context.
-          </p>
+        <div className="border-t border-border bg-white px-5 py-5 sm:px-8 lg:px-10">
+          <div className="mx-auto max-w-5xl">
+            <ChatInput
+              value={composerValue}
+              onChange={setComposerValue}
+              onSubmit={handleSendMessage}
+              disabled={!canSend}
+              isSending={isStreaming}
+              errorMessage={streamError}
+              placeholder={
+                selectedKnowledgeBaseId
+                  ? "Ask a grounded question based on the selected knowledge base"
+                  : "Select a knowledge base before sending a message"
+              }
+            />
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Responses are generated locally and depend on the selected model, prompt, and knowledge base.
+            </p>
+          </div>
         </div>
       }
     >
-      {messageList.length > 0 && !messagesError && (
-        <ChatMessageList messages={messageList} isStreaming={isStreaming} />
-      )}
-
-      {showEmptyState && (
-        <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto px-4 pt-12 pb-32">
-          {pageError && (
-            <div className="mb-8 w-full rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
-              <p className="flex items-center gap-2 font-medium">
-                <AlertTriangle className="w-4 h-4" />
-                Failed to load required data
-              </p>
-              <p className="mt-1 text-red-100/80">{pageError}</p>
-            </div>
-          )}
-
-          {messagesError && (
-            <div className="mb-8 w-full rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
-              <p className="flex items-center gap-2 font-medium">
-                <AlertTriangle className="w-4 h-4" />
-                Failed to load session messages
-              </p>
-              <p className="mt-1 text-red-100/80">{messagesError}</p>
-            </div>
-          )}
-
-          {!pageError && !isDataLoading && (knowledgeBasesQuery.data?.length ?? 0) === 0 && (
-            <div className="mb-8 w-full rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
-              No knowledge bases found. Create one in the Knowledge page to enable grounded responses.
-            </div>
-          )}
-
-          <div className="w-16 h-16 rounded-3xl bg-secondary flex items-center justify-center mb-6 shadow-sm border border-border">
-            <Bot className="w-8 h-8 text-foreground" />
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
+        {(pageError || messagesError || (!pageError && !isDataLoading && (knowledgeBasesQuery.data?.length ?? 0) === 0)) && (
+          <div className="space-y-3 pt-6">
+            {pageError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                <p className="flex items-center gap-2 font-medium">
+                  <AlertTriangle className="h-4 w-4" />
+                  Failed to load required data
+                </p>
+                <p className="mt-1">{pageError}</p>
+              </div>
+            ) : null}
+            {messagesError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                <p className="flex items-center gap-2 font-medium">
+                  <AlertTriangle className="h-4 w-4" />
+                  Failed to load session messages
+                </p>
+                <p className="mt-1">{messagesError}</p>
+              </div>
+            ) : null}
+            {!pageError && !isDataLoading && (knowledgeBasesQuery.data?.length ?? 0) === 0 ? (
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
+                No knowledge bases found. Create one in the Knowledge page to enable grounded responses.
+              </div>
+            ) : null}
           </div>
-          <h2 className="text-2xl font-semibold mb-3 text-foreground">How can I help you today?</h2>
-          <p className="text-muted-foreground text-center text-[15px] max-w-md">
-            Start typing to chat. To run a grounded RAG query, ensure you have selected a
-            <strong className="text-foreground font-medium mx-1">Knowledge Base</strong>
-            from the top menu.
-          </p>
+        )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-12 w-full">
-            <button
-              type="button"
-              onClick={() => setComposerValue("請幫我總結這個知識庫的重要重點。")}
-              className="text-left px-4 py-3 rounded-2xl border border-border bg-card hover:bg-secondary/50 transition-colors text-sm text-foreground/80"
-            >
-              <span className="block font-medium text-foreground mb-1">Summarize docs</span>
-              Using {knowledgeBasesQuery.data?.[0]?.name ?? "your selected knowledge base"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setComposerValue("請解釋向量檢索在 RAG 流程中的角色。")}
-              className="text-left px-4 py-3 rounded-2xl border border-border bg-card hover:bg-secondary/50 transition-colors text-sm text-foreground/80"
-            >
-              <span className="block font-medium text-foreground mb-1">Explain vector search</span>
-              Using{" "}
-              {promptsQuery.data?.find((item) => item.id === selectedPromptId)?.name ?? "selected prompt"}
-            </button>
+        {messageList.length > 0 && !messagesError ? (
+          <div className="flex-1 pt-8">
+            <ChatMessageList messages={messageList} isStreaming={isStreaming} />
           </div>
-        </div>
-      )}
+        ) : null}
+
+        {showEmptyState ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-0 py-12 text-center sm:px-4">
+            <p className="mono-label">local rag workspace</p>
+            <h2 className="display-title mt-5 max-w-3xl text-4xl leading-none text-foreground sm:text-5xl">
+              Ask better questions of your own data.
+            </h2>
+            <p className="mt-4 max-w-xl text-[15px] leading-7 text-muted-foreground">
+              Pick a model, prompt, and knowledge base above. The interface stays out of the way so the retrieved context can do the work.
+            </p>
+
+            <div className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
+              {EMPTY_STATE_PROMPTS.map((item) => (
+                <button
+                  key={item.title}
+                  type="button"
+                  onClick={() => setComposerValue(item.prompt)}
+                  className="surface-panel p-5 text-left transition-colors hover:bg-neutral-50"
+                >
+                  <span className="mono-label text-neutral-400">prompt</span>
+                  <span className="mt-3 block text-base font-medium text-foreground">{item.title}</span>
+                  <span className="mt-2 block text-sm leading-6 text-muted-foreground">{item.description}</span>
+                </button>
+              ))}
+            </div>
+
+            <p className="mt-8 text-xs text-muted-foreground">
+              Current knowledge base: {knowledgeBasesQuery.data?.find((item) => item.id === selectedKnowledgeBaseId)?.name ?? "none selected"}
+            </p>
+          </div>
+        ) : null}
+      </div>
     </DashboardShell>
   );
 }

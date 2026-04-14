@@ -18,11 +18,11 @@ export function DashboardShell({
   mainClassName,
 }: DashboardShellProps) {
   return (
-    <div className="flex h-screen bg-background font-sans overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground lg:flex">
       <AppSidebar {...sidebarProps} />
-      <div className="flex-1 flex flex-col min-w-0 h-full relative">
+      <div className="flex min-w-0 flex-1 flex-col">
         {header}
-        <main className={mainClassName ?? "flex-1 overflow-y-auto w-full relative"}>{children}</main>
+        <main className={mainClassName ?? "flex-1 px-5 py-6 sm:px-8 lg:px-10"}>{children}</main>
         {footer}
       </div>
     </div>

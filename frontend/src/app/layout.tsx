@@ -1,25 +1,12 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Manrope } from "next/font/google";
 
 import { Providers } from "@/app/providers";
 
 import "./globals.css";
 
-const displayFont = Cormorant_Garamond({
-  subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["500", "600", "700"],
-});
-
-const bodyFont = Manrope({
-  subsets: ["latin"],
-  variable: "--font-body",
-  weight: ["400", "500", "600", "700"],
-});
-
 export const metadata: Metadata = {
-  title: "RAG Control Room",
-  description: "Local-first RAG developer platform dashboard.",
+  title: "RAG Workspace",
+  description: "Local-first RAG workspace for grounded conversations and model operations.",
 };
 
 export default function RootLayout({
@@ -28,8 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-Hant" className="dark">
-      <body className={`${displayFont.variable} ${bodyFont.variable} antialiased`} suppressHydrationWarning>
+    <html lang="zh-Hant">
+      <body className="font-sans antialiased" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

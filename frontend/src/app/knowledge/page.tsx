@@ -5,16 +5,20 @@ import { Database, Plus, RefreshCw, Search, Trash2, UploadCloud } from "lucide-r
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { PageHeader } from "@/components/layout/page-header";
+import { PageSection } from "@/components/layout/page-section";
+import { PillPanel } from "@/components/layout/pill-panel";
+import { Button } from "@/components/ui/button";
 import { type ApiError, knowledgeApi } from "@/lib/api";
 
 function statusBadge(status: string) {
   if (status === "ready" || status === "active") {
-    return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+    return "border-neutral-200 bg-neutral-100 text-neutral-700";
   }
   if (status === "indexing" || status === "processing") {
-    return "bg-amber-500/10 text-amber-300 border-amber-500/20";
+    return "border-neutral-300 bg-white text-neutral-600";
   }
-  return "bg-red-500/10 text-red-300 border-red-500/20";
+  return "border-red-200 bg-red-50 text-red-700";
 }
 
 function getErrorMessage(error: unknown): string {
@@ -183,230 +187,142 @@ export default function KnowledgePage() {
   }
 
   return (
-    <DashboardShell
-      header={
-        <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-background">
-          <div className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-foreground" />
-            <h1 className="text-lg font-semibold text-foreground">Knowledge Bases</h1>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen((prev) => !prev)}
-            className="flex items-center gap-2 bg-foreground text-background hover:bg-foreground/90 transition-colors px-4 py-2 rounded-lg text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
+    <DashboardShell>
+      <PageHeader
+        icon={<Database className="h-4 w-4" />}
+        title="Knowledge Bases"
+        description="Index source material, inspect ingestion status, and keep retrieval grounded."
+        actions={
+          <Button type="button" onClick={() => setIsCreateOpen((prev) => !prev)}>
+            <Plus className="h-4 w-4" />
             New Knowledge Base
-          </button>
-        </header>
-      }
-      mainClassName="flex-1 overflow-y-auto w-full relative p-8"
-    >
-      <div className="max-w-6xl mx-auto space-y-6">
-        {isCreateOpen && (
-          <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-            <h2 className="text-base font-semibold">Create Knowledge Base</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input
-                type="text"
-                value={createForm.name}
-                onChange={(event) =>
-                  setCreateForm((prev) => ({ ...prev, name: event.target.value }))
-                }
-                placeholder="Name"
-                className="bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm"
-              />
-              <input
-                type="text"
-                value={createForm.embedding_model}
-                onChange={(event) =>
-                  setCreateForm((prev) => ({ ...prev, embedding_model: event.target.value }))
-                }
-                placeholder="Embedding model"
-                className="bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm"
-              />
-              <input
-                type="number"
-                min={100}
-                max={10000}
-                value={createForm.chunk_size}
-                onChange={(event) =>
-                  setCreateForm((prev) => ({ ...prev, chunk_size: Number(event.target.value) }))
-                }
-                placeholder="Chunk size"
-                className="bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm"
-              />
-              <input
-                type="number"
-                min={0}
-                max={5000}
-                value={createForm.chunk_overlap}
-                onChange={(event) =>
-                  setCreateForm((prev) => ({ ...prev, chunk_overlap: Number(event.target.value) }))
-                }
-                placeholder="Chunk overlap"
-                className="bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
-            <textarea
-              value={createForm.description}
-              onChange={(event) =>
-                setCreateForm((prev) => ({ ...prev, description: event.target.value }))
-              }
-              placeholder="Description"
-              className="w-full min-h-20 bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm"
-            />
-            {createError && <p className="text-sm text-red-300">{createError}</p>}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCreateKnowledgeBase}
-                disabled={createKnowledgeBaseMutation.isPending}
-                className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium disabled:opacity-60"
-              >
-                {createKnowledgeBaseMutation.isPending ? "Creating..." : "Create"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsCreateOpen(false)}
-                className="px-4 py-2 rounded-lg border border-border text-sm"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
+          </Button>
+        }
+      />
 
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      {isCreateOpen ? (
+        <PageSection
+          title="Create Knowledge Base"
+          description="Choose a name, chunking strategy, and embedding model before ingesting files."
+          className="mb-6"
+        >
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <input
+              type="text"
+              value={createForm.name}
+              onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))}
+              placeholder="Name"
+              className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
+            />
+            <input
+              type="text"
+              value={createForm.embedding_model}
+              onChange={(event) => setCreateForm((prev) => ({ ...prev, embedding_model: event.target.value }))}
+              placeholder="Embedding model"
+              className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
+            />
+            <input
+              type="number"
+              min={100}
+              max={10000}
+              value={createForm.chunk_size}
+              onChange={(event) => setCreateForm((prev) => ({ ...prev, chunk_size: Number(event.target.value) }))}
+              placeholder="Chunk size"
+              className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
+            />
+            <input
+              type="number"
+              min={0}
+              max={5000}
+              value={createForm.chunk_overlap}
+              onChange={(event) => setCreateForm((prev) => ({ ...prev, chunk_overlap: Number(event.target.value) }))}
+              placeholder="Chunk overlap"
+              className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
+            />
+          </div>
+          <textarea
+            value={createForm.description}
+            onChange={(event) => setCreateForm((prev) => ({ ...prev, description: event.target.value }))}
+            placeholder="Description"
+            className="mt-3 min-h-24 w-full rounded-xl border border-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/50"
+          />
+          {createError ? <p className="mt-3 text-sm text-red-600">{createError}</p> : null}
+          <div className="mt-4 flex items-center gap-2">
+            <Button type="button" onClick={handleCreateKnowledgeBase} disabled={createKnowledgeBaseMutation.isPending}>
+              {createKnowledgeBaseMutation.isPending ? "Creating..." : "Create"}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        </PageSection>
+      ) : null}
+
+      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <PageSection
+          title="Libraries"
+          description="Browse all indexed knowledge bases in this workspace."
+        >
+          <PillPanel className="mb-4 flex items-center gap-2 px-4 py-0">
+            <Search className="h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="Search knowledge bases..."
-              className="w-full bg-secondary/50 border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring transition-all placeholder:text-muted-foreground text-foreground"
+              placeholder="Search knowledge bases"
+              className="h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
-          </div>
-        </div>
+          </PillPanel>
 
-        <div className="border border-border rounded-xl overflow-hidden bg-card">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-secondary/30 border-b border-border">
-              <tr>
-                <th className="px-6 py-3 font-medium text-foreground">Name</th>
-                <th className="px-6 py-3 font-medium text-foreground">Description</th>
-                <th className="px-6 py-3 font-medium text-foreground">Documents</th>
-                <th className="px-6 py-3 font-medium text-foreground">Status</th>
-                <th className="px-6 py-3 font-medium text-foreground text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {knowledgeBasesQuery.isPending && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-6 text-muted-foreground">
-                    Loading knowledge bases...
-                  </td>
-                </tr>
-              )}
+          <div className="space-y-2">
+            {knowledgeBasesQuery.isPending ? <p className="muted-copy">Loading knowledge bases...</p> : null}
+            {knowledgeBasesQuery.isError ? (
+              <p className="text-sm text-red-600">
+                Failed to load knowledge bases: {getErrorMessage(knowledgeBasesQuery.error as ApiError)}
+              </p>
+            ) : null}
+            {!knowledgeBasesQuery.isPending && !knowledgeBasesQuery.isError && filteredItems.length === 0 ? (
+              <p className="muted-copy">No knowledge bases found.</p>
+            ) : null}
+            {filteredItems.map((item) => {
+              const isSelected = item.id === selectedKbId;
 
-              {knowledgeBasesQuery.isError && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-6 text-red-300">
-                    Failed to load knowledge bases: {getErrorMessage(knowledgeBasesQuery.error as ApiError)}
-                  </td>
-                </tr>
-              )}
-
-              {!knowledgeBasesQuery.isPending &&
-                !knowledgeBasesQuery.isError &&
-                filteredItems.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-6 text-muted-foreground">
-                      No knowledge bases found.
-                    </td>
-                  </tr>
-                )}
-
-              {!knowledgeBasesQuery.isPending &&
-                !knowledgeBasesQuery.isError &&
-                filteredItems.map((item) => (
-                  <tr
-                    key={item.id}
-                    className={`hover:bg-secondary/20 transition-colors group cursor-pointer ${
-                      selectedKbId === item.id ? "bg-secondary/20" : ""
-                    }`}
+              return (
+                <div
+                  key={item.id}
+                  className={`rounded-xl border p-4 transition-colors ${
+                    isSelected ? "border-neutral-300 bg-neutral-50" : "border-border bg-card hover:bg-neutral-50"
+                  }`}
+                >
+                  <button
+                    type="button"
                     onClick={() => setSelectedKbId(item.id)}
+                    className="w-full text-left"
                   >
-                    <td className="px-6 py-4 font-medium text-foreground">{item.name}</td>
-                    <td className="px-6 py-4 text-muted-foreground truncate max-w-xs">
-                      {item.description ?? "No description"}
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">{item.document_count} Files</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${statusBadge(
-                          item.status,
-                        )}`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">{item.name}</p>
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                          {item.description ?? "No description"}
+                        </p>
+                      </div>
+                      <span className={`rounded-full border px-2.5 py-1 text-xs ${statusBadge(item.status)}`}>
                         {item.status}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            queryClient.invalidateQueries({
-                              queryKey: ["knowledge-documents", item.id],
-                            });
-                          }}
-                          className="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-secondary"
-                          title="Sync / Refresh"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (!selectedKbId || selectedKbId !== item.id) {
-                              setSelectedKbId(item.id);
-                            }
-                            uploadInputRef.current?.click();
-                          }}
-                          className="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-secondary"
-                          title="Upload Document"
-                        >
-                          <UploadCloud className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void handleDeleteKnowledgeBase(item.id);
-                          }}
-                          className="p-1.5 text-red-500/70 hover:text-red-500 rounded hover:bg-red-500/10"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                    <p className="mt-3 text-xs text-muted-foreground">{item.document_count} documents</p>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </PageSection>
 
-        <div className="rounded-xl border border-border bg-card">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <h2 className="font-semibold text-foreground">
-              Documents {selectedKnowledgeBase ? `· ${selectedKnowledgeBase.name}` : ""}
-            </h2>
-            <div className="flex items-center gap-2">
+        <PageSection
+          title={selectedKnowledgeBase?.name ?? "Knowledge Base"}
+          description={selectedKnowledgeBase?.description ?? "Inspect files, refresh indexing, and upload new source material."}
+          actions={
+            <>
               <input
                 ref={uploadInputRef}
                 type="file"
@@ -417,75 +333,86 @@ export default function KnowledgePage() {
                   event.target.value = "";
                 }}
               />
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => uploadInputRef.current?.click()}
                 disabled={!selectedKbId || uploadDocumentMutation.isPending}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium disabled:opacity-60"
               >
-                <UploadCloud className="w-3.5 h-3.5" />
+                <UploadCloud className="h-4 w-4" />
                 {uploadDocumentMutation.isPending ? "Uploading..." : "Upload"}
-              </button>
+              </Button>
+              {selectedKnowledgeBase ? (
+                <Button type="button" variant="outline" onClick={() => void handleDeleteKnowledgeBase(selectedKnowledgeBase.id)}>
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              ) : null}
+            </>
+          }
+        >
+          {selectedKnowledgeBase ? (
+            <div className="mb-5 flex flex-wrap gap-2">
+              <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
+                chunk size {selectedKnowledgeBase.chunk_size}
+              </span>
+              <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
+                overlap {selectedKnowledgeBase.chunk_overlap}
+              </span>
+              <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
+                {selectedKnowledgeBase.embedding_model}
+              </span>
             </div>
-          </div>
+          ) : null}
 
-          <div className="p-4">
-            {!selectedKbId && (
-              <p className="text-sm text-muted-foreground">Select a knowledge base to view documents.</p>
-            )}
+          {!selectedKbId ? <p className="muted-copy">Select a knowledge base to view documents.</p> : null}
+          {selectedKbId && documentsQuery.isPending ? <p className="muted-copy">Loading documents...</p> : null}
+          {selectedKbId && documentsQuery.isError ? (
+            <p className="text-sm text-red-600">
+              Failed to load documents: {getErrorMessage(documentsQuery.error as ApiError)}
+            </p>
+          ) : null}
 
-            {selectedKbId && documentsQuery.isPending && (
-              <p className="text-sm text-muted-foreground">Loading documents...</p>
-            )}
-
-            {selectedKbId && documentsQuery.isError && (
-              <p className="text-sm text-red-300">
-                Failed to load documents: {getErrorMessage(documentsQuery.error as ApiError)}
-              </p>
-            )}
-
-            {selectedKbId && !documentsQuery.isPending && !documentsQuery.isError && (
-              <div className="space-y-2">
-                {(documentsQuery.data ?? []).length === 0 && (
-                  <p className="text-sm text-muted-foreground">No documents uploaded yet.</p>
-                )}
-                {(documentsQuery.data ?? []).map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm"
-                  >
+          {selectedKbId && !documentsQuery.isPending && !documentsQuery.isError ? (
+            <div className="space-y-3">
+              {(documentsQuery.data ?? []).length === 0 ? <p className="muted-copy">No documents uploaded yet.</p> : null}
+              {(documentsQuery.data ?? []).map((doc) => (
+                <div key={doc.id} className="rounded-xl border border-border p-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{doc.filename}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="truncate text-sm font-medium text-foreground">{doc.filename}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {doc.file_type} · {doc.chunk_count} chunks · {doc.status}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button
                         type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={() => reindexMutation.mutate(doc.id)}
                         disabled={reindexMutation.isPending}
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs border border-border hover:bg-secondary disabled:opacity-60"
                       >
-                        <RefreshCw className="w-3 h-3" />
+                        <RefreshCw className="h-3.5 w-3.5" />
                         Reindex
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="destructive"
+                        size="sm"
                         onClick={() => deleteDocumentMutation.mutate(doc.id)}
                         disabled={deleteDocumentMutation.isPending}
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-red-300 border border-red-500/30 hover:bg-red-500/10 disabled:opacity-60"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </PageSection>
       </div>
     </DashboardShell>
   );

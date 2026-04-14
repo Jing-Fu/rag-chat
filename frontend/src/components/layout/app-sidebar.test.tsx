@@ -40,6 +40,7 @@ describe("AppSidebar", () => {
   it("routes to chat and resets session when no custom new-chat handler is provided", () => {
     render(<AppSidebar />);
 
+    expect(screen.getByText("RAG Workspace")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /new chat/i }));
 
     expect(resetSessionSelection).toHaveBeenCalledTimes(1);

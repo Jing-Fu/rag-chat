@@ -23,4 +23,35 @@ describe("ChatMessageList", () => {
 
     expect(screen.getByLabelText("Assistant is thinking")).toBeInTheDocument();
   });
+
+  it("renders a Sources label for assistant citations", () => {
+    render(
+      <ChatMessageList
+        messages={[
+          {
+            id: "assistant-2",
+            session_id: "session-1",
+            role: "assistant",
+            content: "Answer",
+            sources: {
+              items: [
+                {
+                  chunk_id: "chunk-1",
+                  chunk_index: 0,
+                  content: "content",
+                  metadata: null,
+                  filename: "notes.md",
+                  relevance_score: 0.91,
+                },
+              ],
+            },
+            created_at: new Date().toISOString(),
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Sources")).toBeInTheDocument();
+    expect(screen.getByText(/notes.md/)).toBeInTheDocument();
+  });
 });

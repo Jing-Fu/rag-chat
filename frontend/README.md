@@ -1,4 +1,4 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This frontend is a Next.js application for the local-first RAG workspace.
 
 ## Getting Started
 
@@ -16,9 +16,25 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You can start editing the page by modifying `src/app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## UI Direction
+
+The frontend follows an Ollama-inspired grayscale design language:
+
+- white background surfaces
+- black primary text
+- pill-shaped controls
+- 12px container corners
+- no shadows or gradients
+
+Primary routes:
+
+- `/` chat workspace
+- `/knowledge` knowledge base management
+- `/models` local model inventory
+- `/prompts` prompt template editor
+- `/endpoints` endpoint management and query testing
 
 ## Learn More
 
