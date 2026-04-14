@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 
+import { Providers } from "@/app/providers";
+
 import "./globals.css";
 
 const displayFont = Cormorant_Garamond({
@@ -28,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="zh-Hant" className="dark">
       <body className={`${displayFont.variable} ${bodyFont.variable} antialiased`} suppressHydrationWarning>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
