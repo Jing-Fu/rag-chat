@@ -1,16 +1,10 @@
-function resolveApiBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+function resolveApiPath(path: string): string {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
   }
 
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:8000`;
-  }
-
-  return "http://localhost:8000";
+  return path.startsWith("/") ? path : `/${path}`;
 }
-
-const API_BASE_URL = resolveApiBaseUrl();
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
@@ -45,7 +39,7 @@ async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(resolveApiPath(path), {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -104,7 +98,7 @@ async function consumeSse(
   onEvent: SseHandler,
 ): Promise<void> {
   if (!response.body) {
-    throw new ApiError(500, "SSE response body is missing");
+    throw new ApiError(500, "SSE 回應內容遺失");
   }
 
   const reader = response.body.getReader();
@@ -296,7 +290,7 @@ export const knowledgeApi = {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(`${API_BASE_URL}/api/knowledge/${kbId}/upload`, {
+    const response = await fetch(resolveApiPath(`/api/knowledge/${kbId}/upload`), {
       method: "POST",
       body: formData,
     });
@@ -320,13 +314,14 @@ export const chatApi = {
   listSessions: () => apiRequest<ChatSessionSummary[]>("/api/chat/sessions"),
   getMessages: (sessionId: string) =>
     apiRequest<ChatMessageItem[]>(`/api/chat/sessions/${sessionId}/messages`),
+  deleteAllSessions: () => apiRequest<void>("/api/chat/sessions", { method: "DELETE" }),
   deleteSession: (sessionId: string) =>
     apiRequest<void>(`/api/chat/sessions/${sessionId}`, { method: "DELETE" }),
   async streamChat(
     payload: ChatRequestPayload,
     handlers: ChatStreamHandlers = {},
   ): Promise<{ sessionId: string | null; fullText: string; sources: ChatSourceItem[] }> {
-    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+    const response = await fetch(resolveApiPath("/api/chat"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -399,7 +394,7 @@ export const modelApi = {
   delete: (modelName: string) =>
     apiRequest<void>(`/api/models/${encodeURIComponent(modelName)}`, { method: "DELETE" }),
   async pull(modelName: string, handlers: ModelPullHandlers = {}) {
-    const response = await fetch(`${API_BASE_URL}/api/models/pull`, {
+    const response = await fetch(resolveApiPath("/api/models/pull"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

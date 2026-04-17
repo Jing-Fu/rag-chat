@@ -56,7 +56,13 @@ async def stream_rag_response(
     except Exception as exc:
         raise ServiceError(f"Embedding generation failed: {exc}", status_code=502) from exc
 
-    chunks = await retrieve_relevant_chunks(db, kb.id, query_embedding, top_k=5)
+    chunks = await retrieve_relevant_chunks(
+        db,
+        kb.id,
+        query_embedding,
+        query_text=request.message,
+        top_k=5,
+    )
     if not chunks:
         raise ServiceError("Knowledge base is empty or not indexed yet", status_code=400)
 

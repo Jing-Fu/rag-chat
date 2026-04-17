@@ -41,9 +41,9 @@ export function ChatHeader({
     prompts.find((prompt) => prompt.id === selectedPromptId) ?? prompts.find((prompt) => prompt.is_default);
   const selectedKnowledgeBase = knowledgeBases.find((kb) => kb.id === selectedKnowledgeBaseId);
 
-  const selectedModelLabel = selectedModelName ?? "Select model";
-  const selectedPromptLabel = selectedPrompt?.name ?? "Select prompt";
-  const selectedKnowledgeLabel = selectedKnowledgeBase?.name ?? "No Knowledge Base";
+  const selectedModelLabel = selectedModelName ?? "選擇模型";
+  const selectedPromptLabel = selectedPrompt?.name ?? "選擇提示詞";
+  const selectedKnowledgeLabel = selectedKnowledgeBase?.name ?? "選擇知識庫";
 
   return (
     <header className="border-b border-border bg-white/95 px-5 py-4 backdrop-blur supports-[backdrop-filter]:bg-white/80 sm:px-8 lg:px-10">
@@ -67,7 +67,7 @@ export function ChatHeader({
                 </DropdownMenuItem>
               ))
             ) : (
-              <DropdownMenuItem disabled>No models available</DropdownMenuItem>
+              <DropdownMenuItem disabled>目前沒有可用模型</DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -90,7 +90,7 @@ export function ChatHeader({
                 </DropdownMenuItem>
               ))
             ) : (
-              <DropdownMenuItem disabled>No prompts available</DropdownMenuItem>
+              <DropdownMenuItem disabled>目前沒有可用提示詞</DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -102,9 +102,6 @@ export function ChatHeader({
             <ChevronDown className="h-3 w-3 text-muted-foreground opacity-50" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-[240px]">
-            <DropdownMenuItem className="cursor-pointer" onClick={() => onSelectKnowledgeBaseId(null)}>
-              None (General Chat)
-            </DropdownMenuItem>
             {knowledgeBases.length > 0 ? (
               knowledgeBases.map((kb) => (
                 <DropdownMenuItem
@@ -116,7 +113,7 @@ export function ChatHeader({
                 </DropdownMenuItem>
               ))
             ) : (
-              <DropdownMenuItem disabled>No knowledge bases available</DropdownMenuItem>
+              <DropdownMenuItem disabled>目前沒有可用知識庫</DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -126,12 +123,12 @@ export function ChatHeader({
           {isLoading ? (
             <span className="inline-flex items-center gap-1">
               <Loader2 className="h-3 w-3 animate-spin" />
-              Syncing workspace
+              同步工作區資料中
             </span>
           ) : hasError ? (
-            <span className="text-red-600">Workspace data unavailable</span>
+            <span className="text-red-600">工作區資料目前無法使用</span>
           ) : (
-            <span>Workspace ready</span>
+            <span>工作區已就緒</span>
           )}
         </div>
       </div>

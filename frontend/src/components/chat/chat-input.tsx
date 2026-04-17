@@ -17,7 +17,7 @@ export function ChatInput({
   onSubmit,
   disabled = false,
   isSending = false,
-  placeholder = "Ask anything about your local knowledge",
+  placeholder = "詢問任何與本機知識庫相關的問題",
   errorMessage = null,
   rows = 1,
 }: ChatInputProps) {
@@ -52,14 +52,14 @@ export function ChatInput({
               type="button"
               disabled
               className="cursor-not-allowed rounded-full p-2 text-muted-foreground/60"
-              title="File upload is managed in Knowledge page"
+              title="檔案上傳請到知識庫頁面操作"
             >
               <Paperclip className="w-5 h-5" />
             </button>
           </div>
           <div className="flex items-center gap-2">
             <div className="mr-2 hidden text-xs text-muted-foreground sm:block">
-              Use shift + return for new line
+              使用 Shift + Enter 換行
             </div>
             <button
               type="button"

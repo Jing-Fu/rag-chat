@@ -87,6 +87,20 @@ async def test_delete_session_returns_no_content(monkeypatch) -> None:
     assert response.text == ""
 
 
+async def test_delete_all_sessions_returns_no_content(monkeypatch) -> None:
+    async def _mock_delete_all(self):
+        return None
+
+    monkeypatch.setattr("app.services.chat_service.ChatService.delete_all_sessions", _mock_delete_all)
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await client.delete("/api/chat/sessions")
+
+    assert response.status_code == 204
+    assert response.text == ""
+
+
 async def test_get_messages_returns_data(monkeypatch) -> None:
     async def _mock_get(self, session_id):
         return [

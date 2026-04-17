@@ -20,14 +20,14 @@ import { useChatUiStore } from "@/stores";
 
 const EMPTY_STATE_PROMPTS = [
   {
-    title: "Summarize docs",
-    description: "Pull out the most important themes from the selected knowledge base.",
+    title: "總結知識庫重點",
+    description: "從目前選定的知識庫中整理最重要的主題與觀點。",
     prompt: "請幫我總結這個知識庫的重要重點。",
   },
   {
-    title: "Explain retrieval",
-    description: "Describe how vector retrieval influences grounded answers in this workspace.",
-    prompt: "請解釋向量檢索在 RAG 流程中的角色。",
+    title: "說明混合檢索",
+    description: "解釋向量與關鍵字檢索如何一起影響這個工作區的回答品質。",
+    prompt: "請解釋混合檢索在這個 RAG 工作區中的作用。",
   },
 ];
 
@@ -38,7 +38,7 @@ function getErrorMessage(error: unknown): string | null {
   if (error instanceof Error) {
     return error.message;
   }
-  return "Unknown error";
+  return "未知錯誤";
 }
 
 export default function Home() {
@@ -47,6 +47,7 @@ export default function Home() {
   const [streamError, setStreamError] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [pendingRequestMessage, setPendingRequestMessage] = useState<string | null>(null);
+  const [isDeletingAllSessions, setIsDeletingAllSessions] = useState(false);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessageItem[] | null>(null);
 
@@ -145,6 +146,37 @@ export default function Home() {
     }
   }, [knowledgeBasesQuery.data, selectedKnowledgeBaseId, setSelectedKnowledgeBaseId]);
 
+  useEffect(() => {
+    if (
+      isStreaming ||
+      !selectedSessionId ||
+      !sessionsQuery.data ||
+      sessionsQuery.isPending ||
+      sessionsQuery.isFetching
+    ) {
+      return;
+    }
+
+    const hasSelectedSession = sessionsQuery.data.some((session) => session.id === selectedSessionId);
+    if (hasSelectedSession) {
+      return;
+    }
+
+    queryClient.removeQueries({ queryKey: ["chat-messages", selectedSessionId] });
+    resetSessionSelection();
+    setOptimisticMessages(null);
+    setPendingRequestMessage(null);
+    setStreamError(null);
+  }, [
+    isStreaming,
+    queryClient,
+    resetSessionSelection,
+    selectedSessionId,
+    sessionsQuery.data,
+    sessionsQuery.isFetching,
+    sessionsQuery.isPending,
+  ]);
+
   const isDataLoading =
     modelsQuery.isPending || promptsQuery.isPending || knowledgeBasesQuery.isPending;
 
@@ -170,7 +202,7 @@ export default function Home() {
   }
 
   async function handleDeleteSession(sessionId: string) {
-    if (!window.confirm("Delete this chat session? This action cannot be undone.")) {
+    if (!window.confirm("要刪除這筆聊天紀錄嗎？此操作無法復原。")) {
       return;
     }
 
@@ -189,9 +221,35 @@ export default function Home() {
         setStreamError(null);
       }
     } catch (error) {
-      setStreamError(getErrorMessage(error) ?? "Failed to delete chat session");
+      setStreamError(getErrorMessage(error) ?? "刪除聊天紀錄失敗");
     } finally {
       setDeletingSessionId(null);
+    }
+  }
+
+  async function handleDeleteAllSessions() {
+    if (!sessionsQuery.data || sessionsQuery.data.length === 0) {
+      return;
+    }
+    if (!window.confirm("要刪除所有聊天紀錄嗎？此操作無法復原。")) {
+      return;
+    }
+
+    setIsDeletingAllSessions(true);
+    setStreamError(null);
+
+    try {
+      await chatApi.deleteAllSessions();
+      queryClient.removeQueries({ queryKey: ["chat-messages"] });
+      await queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
+      resetSessionSelection();
+      setOptimisticMessages(null);
+      setPendingRequestMessage(null);
+      setStreamError(null);
+    } catch (error) {
+      setStreamError(getErrorMessage(error) ?? "刪除全部聊天紀錄失敗");
+    } finally {
+      setIsDeletingAllSessions(false);
     }
   }
 
@@ -199,7 +257,7 @@ export default function Home() {
     const message = composerValue.trim();
     if (!message || !canSend || !selectedKnowledgeBaseId || !selectedModelName) {
       if (!selectedKnowledgeBaseId) {
-        setStreamError("Select a knowledge base before sending a message.");
+        setStreamError("送出訊息前請先選擇知識庫。");
       }
       return;
     }
@@ -296,7 +354,7 @@ export default function Home() {
       setPendingRequestMessage(null);
       setOptimisticMessages(null);
     } catch (error) {
-      const errorMessage = getErrorMessage(error) ?? "Failed to stream response";
+      const errorMessage = getErrorMessage(error) ?? "串流回應失敗";
       setStreamError(errorMessage);
       setOptimisticMessages((prev) => {
         if (!prev || prev.length === 0) {
@@ -306,7 +364,7 @@ export default function Home() {
         const last = next[next.length - 1];
         next[next.length - 1] = {
           ...last,
-          content: last.content || "Response interrupted.",
+          content: last.content || "回應已中斷。",
         };
         return next;
       });
@@ -334,7 +392,9 @@ export default function Home() {
         selectedSessionId,
         onSelectSession: handleSelectSession,
         onNewChat: handleNewChat,
+        onDeleteAllSessions: handleDeleteAllSessions,
         onDeleteSession: handleDeleteSession,
+        isDeletingAllSessions,
         deletingSessionId,
       }}
       header={
@@ -364,12 +424,12 @@ export default function Home() {
               errorMessage={streamError}
               placeholder={
                 selectedKnowledgeBaseId
-                  ? "Ask a grounded question based on the selected knowledge base"
-                  : "Select a knowledge base before sending a message"
+                  ? "根據目前選定的知識庫提出有依據的問題"
+                  : "送出訊息前請先選擇知識庫"
               }
             />
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              Responses are generated locally and depend on the selected model, prompt, and knowledge base.
+              回應會在本機產生，並依賴目前選擇的模型、提示詞與知識庫。
             </p>
           </div>
         </div>
@@ -382,7 +442,7 @@ export default function Home() {
               <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 <p className="flex items-center gap-2 font-medium">
                   <AlertTriangle className="h-4 w-4" />
-                  Failed to load required data
+                  載入必要資料失敗
                 </p>
                 <p className="mt-1">{pageError}</p>
               </div>
@@ -391,14 +451,14 @@ export default function Home() {
               <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 <p className="flex items-center gap-2 font-medium">
                   <AlertTriangle className="h-4 w-4" />
-                  Failed to load session messages
+                  載入對話訊息失敗
                 </p>
                 <p className="mt-1">{messagesError}</p>
               </div>
             ) : null}
             {!pageError && !isDataLoading && (knowledgeBasesQuery.data?.length ?? 0) === 0 ? (
               <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
-                No knowledge bases found. Create one in the Knowledge page to enable grounded responses.
+                目前沒有知識庫。請先到知識庫頁面建立資料，才能使用有依據的回答。
               </div>
             ) : null}
           </div>
@@ -412,12 +472,12 @@ export default function Home() {
 
         {showEmptyState ? (
           <div className="flex flex-1 flex-col items-center justify-center px-0 py-12 text-center sm:px-4">
-            <p className="mono-label">local rag workspace</p>
+            <p className="mono-label">本機 rag 工作區</p>
             <h2 className="display-title mt-5 max-w-3xl text-4xl leading-none text-foreground sm:text-5xl">
-              Ask better questions of your own data.
+              用自己的資料問出更有依據的答案。
             </h2>
             <p className="mt-4 max-w-xl text-[15px] leading-7 text-muted-foreground">
-              Pick a model, prompt, and knowledge base above. The interface stays out of the way so the retrieved context can do the work.
+              先選擇模型、提示詞與知識庫。介面會保持簡潔，讓檢索到的上下文真正發揮作用。
             </p>
 
             <div className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
@@ -428,7 +488,7 @@ export default function Home() {
                   onClick={() => setComposerValue(item.prompt)}
                   className="surface-panel p-5 text-left transition-colors hover:bg-neutral-50"
                 >
-                  <span className="mono-label text-neutral-400">prompt</span>
+                  <span className="mono-label text-neutral-400">範例提問</span>
                   <span className="mt-3 block text-base font-medium text-foreground">{item.title}</span>
                   <span className="mt-2 block text-sm leading-6 text-muted-foreground">{item.description}</span>
                 </button>
@@ -436,7 +496,9 @@ export default function Home() {
             </div>
 
             <p className="mt-8 text-xs text-muted-foreground">
-              Current knowledge base: {knowledgeBasesQuery.data?.find((item) => item.id === selectedKnowledgeBaseId)?.name ?? "none selected"}
+              目前知識庫：
+              {" "}
+              {knowledgeBasesQuery.data?.find((item) => item.id === selectedKnowledgeBaseId)?.name ?? "尚未選擇"}
             </p>
           </div>
         ) : null}

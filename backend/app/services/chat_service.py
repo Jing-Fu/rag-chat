@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 
 import ollama as ollama_client
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -44,6 +44,8 @@ class ChatService:
             await self.db.flush()
             chat_history = []
 
+        session.updated_at = datetime.now(UTC)
+
         user_message = ChatMessage(
             session_id=session.id,
             role="user",
@@ -52,6 +54,7 @@ class ChatService:
         )
         self.db.add(user_message)
         await self.db.flush()
+        await self.db.commit()
 
         yield {"event": "session", "data": str(session.id)}
 
@@ -124,6 +127,10 @@ class ChatService:
         if session is None:
             raise ServiceError("Chat session not found", status_code=404)
         await self.db.delete(session)
+        await self.db.commit()
+
+    async def delete_all_sessions(self) -> None:
+        await self.db.execute(delete(ChatSession))
         await self.db.commit()
 
     async def _resolve_prompt_template(

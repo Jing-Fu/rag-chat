@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ApiError, chatApi } from "@/lib/api";
+import { ApiError, chatApi, knowledgeApi } from "@/lib/api";
 
 function createSseResponse(chunks: string[]): Response {
   const encoder = new TextEncoder();
@@ -22,6 +22,28 @@ function createSseResponse(chunks: string[]): Response {
 describe("chatApi.streamChat", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("uses same-origin API paths for JSON requests", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await knowledgeApi.list();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/knowledge",
+      expect.objectContaining({
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
+    );
   });
 
   it("parses SSE events and returns final accumulated message", async () => {
@@ -53,6 +75,24 @@ describe("chatApi.streamChat", () => {
     expect(result.sources).toEqual([]);
   });
 
+  it("uses same-origin API path for deleting all chat sessions", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await chatApi.deleteAllSessions();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/chat/sessions",
+      expect.objectContaining({
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
+    );
+  });
+
   it("throws ApiError when backend returns non-2xx", async () => {
     vi.stubGlobal(
       "fetch",
@@ -73,4 +113,3 @@ describe("chatApi.streamChat", () => {
     ).rejects.toBeInstanceOf(ApiError);
   });
 });
-

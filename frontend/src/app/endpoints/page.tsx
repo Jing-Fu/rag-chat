@@ -14,7 +14,7 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return "Unknown error";
+  return "未知錯誤";
 }
 
 type CreateEndpointForm = {
@@ -144,7 +144,7 @@ export default function EndpointsPage() {
   const queryMutation = useMutation({
     mutationFn: async () => {
       if (!selectedEndpointId) {
-        throw new Error("Select an endpoint first.");
+        throw new Error("請先選擇端點。");
       }
       return endpointApi.query(selectedEndpointId, queryQuestion.trim(), queryApiKey.trim());
     },
@@ -158,11 +158,11 @@ export default function EndpointsPage() {
   function handleCreateEndpoint() {
     setCreateError(null);
     if (!createForm.name.trim()) {
-      setCreateError("Endpoint name is required.");
+      setCreateError("端點名稱為必填。");
       return;
     }
     if (!createForm.kb_id || !createForm.prompt_id || !createForm.model_name) {
-      setCreateError("Please select knowledge base, prompt, and model.");
+      setCreateError("請選擇知識庫、提示詞與模型。");
       return;
     }
     createMutation.mutate({
@@ -185,24 +185,24 @@ export default function EndpointsPage() {
     <DashboardShell>
       <PageHeader
         icon={<Link2 className="h-4 w-4" />}
-        title="API Endpoints"
-        description="Create query endpoints backed by a knowledge base, prompt, and local model."
+        title="API 端點"
+        description="建立由知識庫、提示詞與本機模型支援的查詢端點。"
         actions={
           <Button type="button" variant="outline" onClick={() => endpointsQuery.refetch()}>
             <RotateCcw className="h-4 w-4" />
-            Refresh
+            重新整理
           </Button>
         }
       />
 
       <div className="space-y-6">
-        <PageSection title="Create Endpoint" description="Package a prompt, model, and knowledge base into a reusable query surface.">
+        <PageSection title="建立端點" description="把提示詞、模型與知識庫組合成可重複使用的查詢介面。">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <input
               type="text"
               value={createForm.name}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))}
-              placeholder="Endpoint name"
+              placeholder="端點名稱"
               className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             />
             <select
@@ -210,7 +210,7 @@ export default function EndpointsPage() {
               onChange={(event) => setCreateForm((prev) => ({ ...prev, kb_id: event.target.value }))}
               className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             >
-              <option value="">Select knowledge base</option>
+              <option value="">選擇知識庫</option>
               {(knowledgeQuery.data ?? []).map((kb) => (
                 <option key={kb.id} value={kb.id}>
                   {kb.name}
@@ -222,7 +222,7 @@ export default function EndpointsPage() {
               onChange={(event) => setCreateForm((prev) => ({ ...prev, prompt_id: event.target.value }))}
               className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             >
-              <option value="">Select prompt</option>
+              <option value="">選擇提示詞</option>
               {(promptsQuery.data ?? []).map((prompt) => (
                 <option key={prompt.id} value={prompt.id}>
                   {prompt.name}
@@ -234,7 +234,7 @@ export default function EndpointsPage() {
               onChange={(event) => setCreateForm((prev) => ({ ...prev, model_name: event.target.value }))}
               className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             >
-              <option value="">Select model</option>
+              <option value="">選擇模型</option>
               {llmModels.map((model) => (
                 <option key={model.name} value={model.name}>
                   {model.name}
@@ -246,22 +246,22 @@ export default function EndpointsPage() {
           <div className="mt-4">
             <Button type="button" onClick={handleCreateEndpoint} disabled={createMutation.isPending}>
               <Plus className="h-4 w-4" />
-              {createMutation.isPending ? "Creating..." : "Create Endpoint"}
+              {createMutation.isPending ? "建立中..." : "建立端點"}
             </Button>
           </div>
         </PageSection>
 
         <div className="grid gap-6 xl:grid-cols-[1.1fr_minmax(0,1fr)]">
-          <PageSection title="Endpoint Inventory" description="Review active keys and the model pairing behind each endpoint.">
+          <PageSection title="端點列表" description="查看每個端點目前的金鑰與模型組合。">
             <div className="space-y-3">
-              {endpointsQuery.isPending ? <p className="muted-copy">Loading endpoints...</p> : null}
+              {endpointsQuery.isPending ? <p className="muted-copy">載入端點中...</p> : null}
               {endpointsQuery.isError ? (
                 <p className="text-sm text-red-600">
-                  Failed to load endpoints: {getErrorMessage(endpointsQuery.error as ApiError)}
+                  載入端點失敗：{getErrorMessage(endpointsQuery.error as ApiError)}
                 </p>
               ) : null}
               {!endpointsQuery.isPending && !endpointsQuery.isError && (endpointsQuery.data ?? []).length === 0 ? (
-                <p className="muted-copy">No API endpoints yet.</p>
+                <p className="muted-copy">目前還沒有 API 端點。</p>
               ) : null}
 
               {(endpointsQuery.data ?? []).map((endpoint) => {
@@ -283,18 +283,18 @@ export default function EndpointsPage() {
                           <p className="mt-1 text-sm text-muted-foreground">{endpoint.model_name}</p>
                         </div>
                         <span className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground">
-                          {endpoint.is_active ? "Active" : "Disabled"}
+                          {endpoint.is_active ? "啟用中" : "已停用"}
                         </span>
                       </div>
                     </button>
 
                     <div className="mt-4 rounded-xl border border-border bg-white px-4 py-3 text-xs text-muted-foreground">
-                      <p>API Key</p>
+                      <p>API 金鑰</p>
                       <div className="mt-2 flex items-center gap-2">
                         <code className="min-w-0 flex-1 truncate">{endpoint.api_key}</code>
                         <Button type="button" variant="outline" size="sm" onClick={() => void handleCopy(endpoint.api_key)}>
                           <Copy className="h-3.5 w-3.5" />
-                          Copy
+                          複製
                         </Button>
                         <Button
                           type="button"
@@ -304,7 +304,7 @@ export default function EndpointsPage() {
                           disabled={regenerateMutation.isPending}
                         >
                           <KeyRound className="h-3.5 w-3.5" />
-                          Regenerate
+                          重新產生
                         </Button>
                       </div>
                     </div>
@@ -314,7 +314,7 @@ export default function EndpointsPage() {
                         {[
                           `curl -X POST http://localhost:8000/api/endpoints/${endpoint.id}/query \\\\`,
                           '  -H "Content-Type: application/json" \\\\',
-                          `  -d '{"question":"What is in this knowledge base?","api_key":"${endpoint.api_key}"}'`,
+                          `  -d '{"question":"這個知識庫裡有什麼內容？","api_key":"${endpoint.api_key}"}'`,
                         ].join("\n")}
                       </code>
                     </pre>
@@ -324,14 +324,14 @@ export default function EndpointsPage() {
             </div>
           </PageSection>
 
-          <PageSection title="Query Workspace" description="Send a test request with the current key and inspect the response payload.">
+          <PageSection title="查詢工作區" description="使用目前金鑰送出測試請求，並檢查回應內容。">
             <div className="space-y-4">
               <select
                 value={selectedEndpointId ?? ""}
                 onChange={(event) => setSelectedEndpointId(event.target.value || null)}
                 className="h-11 w-full rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
               >
-                <option value="">Select endpoint</option>
+                <option value="">選擇端點</option>
                 {(endpointsQuery.data ?? []).map((endpoint) => (
                   <option key={endpoint.id} value={endpoint.id}>
                     {endpoint.name}
@@ -343,14 +343,14 @@ export default function EndpointsPage() {
                 type="text"
                 value={queryApiKey}
                 onChange={(event) => setQueryApiKey(event.target.value)}
-                placeholder="API key"
+                placeholder="API 金鑰"
                 className="h-11 w-full rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
               />
 
               <textarea
                 value={queryQuestion}
                 onChange={(event) => setQueryQuestion(event.target.value)}
-                placeholder="Ask a question"
+                placeholder="輸入問題"
                 className="min-h-28 w-full rounded-xl border border-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/50"
               />
 
@@ -358,7 +358,7 @@ export default function EndpointsPage() {
                 type="button"
                 onClick={() => {
                   if (!queryQuestion.trim()) {
-                    setQueryError("Please enter a question.");
+                    setQueryError("請輸入問題。");
                     return;
                   }
                   queryMutation.mutate();
@@ -366,15 +366,15 @@ export default function EndpointsPage() {
                 disabled={queryMutation.isPending || !selectedEndpointId}
               >
                 <SendHorizontal className="h-4 w-4" />
-                {queryMutation.isPending ? "Querying..." : "Run Query"}
+                {queryMutation.isPending ? "查詢中..." : "執行查詢"}
               </Button>
 
               {queryError ? <p className="text-sm text-red-600">{queryError}</p> : null}
 
               <div className="rounded-xl border border-border bg-neutral-50 p-4">
-                <p className="mono-label mb-3 text-neutral-400">response</p>
+                <p className="mono-label mb-3 text-neutral-400">回應</p>
                 <pre className="overflow-x-auto whitespace-pre-wrap text-sm text-neutral-700">
-                  {queryResult ?? "No response yet."}
+                  {queryResult ?? "目前還沒有回應。"}
                 </pre>
               </div>
             </div>

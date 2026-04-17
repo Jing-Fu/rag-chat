@@ -7,7 +7,7 @@ function getSources(message: ChatMessageItem): ChatSourceItem[] {
 function ThinkingIndicator() {
   return (
     <span
-      aria-label="Assistant is thinking"
+      aria-label="助理正在思考"
       className="inline-flex items-center gap-1 text-muted-foreground"
     >
       <span className="size-2 rounded-full bg-current animate-pulse [animation-delay:-0.3s]" />
@@ -55,11 +55,11 @@ export function ChatMessageList({ messages, isStreaming = false }: ChatMessageLi
               )}
               {!isUser && sources.length > 0 && (
                 <div className="mt-4 rounded-[12px] border border-border bg-muted px-3 py-3 text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground">Sources</p>
+                  <p className="font-medium text-foreground">引用來源</p>
                   <ul className="mt-2 space-y-1.5">
                     {sources.map((source) => (
                       <li key={`${source.chunk_id}-${source.chunk_index}`} className="truncate">
-                        {source.filename} · chunk {source.chunk_index} ·{" "}
+                        {source.filename} · 區塊 {source.chunk_index} ·{" "}
                         {(source.relevance_score * 100).toFixed(1)}%
                       </li>
                     ))}
@@ -72,7 +72,7 @@ export function ChatMessageList({ messages, isStreaming = false }: ChatMessageLi
       })}
 
       {isStreaming && (
-        <div className="pl-2 text-xs text-muted-foreground animate-pulse">Streaming response...</div>
+        <div className="pl-2 text-xs text-muted-foreground animate-pulse">回應串流中...</div>
       )}
     </div>
   );

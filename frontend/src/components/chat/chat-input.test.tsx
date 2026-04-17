@@ -7,7 +7,7 @@ describe("ChatInput", () => {
   it("renders the minimal composer placeholder", () => {
     render(<ChatInput value="" onChange={() => {}} onSubmit={() => {}} />);
 
-    expect(screen.getByPlaceholderText("Ask anything about your local knowledge")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("詢問任何與本機知識庫相關的問題")).toBeInTheDocument();
   });
 
   it("submits on Enter without Shift when message is non-empty", () => {
@@ -22,7 +22,7 @@ describe("ChatInput", () => {
       />,
     );
 
-    const textarea = screen.getByPlaceholderText("Ask anything about your local knowledge");
+    const textarea = screen.getByPlaceholderText("詢問任何與本機知識庫相關的問題");
     fireEvent.keyDown(textarea, { key: "Enter", code: "Enter", shiftKey: false });
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
@@ -40,10 +40,9 @@ describe("ChatInput", () => {
       />,
     );
 
-    const textarea = screen.getByPlaceholderText("Ask anything about your local knowledge");
+    const textarea = screen.getByPlaceholderText("詢問任何與本機知識庫相關的問題");
     fireEvent.keyDown(textarea, { key: "Enter", code: "Enter", shiftKey: true });
 
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });
-

@@ -14,7 +14,7 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return "Unknown error";
+  return "未知錯誤";
 }
 
 function formatBytes(size: number | null): string {
@@ -34,6 +34,17 @@ function formatBytes(size: number | null): string {
   return `${value.toFixed(1)} ${units[unitIndex]}`;
 }
 
+function formatModelType(modelType: string): string {
+  switch (modelType) {
+    case "llm":
+      return "聊天模型";
+    case "embed":
+      return "嵌入模型";
+    default:
+      return modelType;
+  }
+}
+
 export default function ModelsPage() {
   const queryClient = useQueryClient();
   const [modelNameToPull, setModelNameToPull] = useState("");
@@ -47,11 +58,11 @@ export default function ModelsPage() {
 
   const pullMutation = useMutation({
     mutationFn: async (modelName: string) => {
-      setPullProgress({ status: "Preparing..." });
+      setPullProgress({ status: "準備下載..." });
       setPullError(null);
       await modelApi.pull(modelName, {
         onProgress: (progress) => setPullProgress(progress),
-        onDone: () => setPullProgress({ status: "Completed" }),
+        onDone: () => setPullProgress({ status: "完成" }),
         onError: (message) => setPullError(message),
       });
     },
@@ -83,27 +94,27 @@ export default function ModelsPage() {
     <DashboardShell>
       <PageHeader
         icon={<Cpu className="h-4 w-4" />}
-        title="Models"
-        description="Fetch local models, inspect inventory, and keep your workspace runtime ready."
+        title="模型"
+        description="管理本機模型、查看清單，並讓工作區執行環境保持可用。"
         actions={
           <Button type="button" variant="outline" onClick={() => modelsQuery.refetch()}>
             <RefreshCw className="h-4 w-4" />
-            Refresh
+            重新整理
           </Button>
         }
       />
 
       <div className="space-y-6">
         <PageSection
-          title="Pull Model"
-          description="Fetch a local LLM or embedding model without leaving the workspace."
+          title="下載模型"
+          description="直接在工作區下載本機 LLM 或嵌入模型。"
         >
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               type="text"
               value={modelNameToPull}
               onChange={(event) => setModelNameToPull(event.target.value)}
-              placeholder="e.g. llama3.2 or nomic-embed-text"
+              placeholder="例如：llama3.2 或 nomic-embed-text"
               className="h-11 flex-1 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             />
             <Button
@@ -112,13 +123,13 @@ export default function ModelsPage() {
               disabled={pullMutation.isPending || !modelNameToPull.trim()}
             >
               <Download className="h-4 w-4" />
-              {pullMutation.isPending ? "Pulling..." : "Pull"}
+              {pullMutation.isPending ? "下載中..." : "下載"}
             </Button>
           </div>
 
           {pullProgress ? (
             <div className="mt-4">
-              <p className="text-sm text-muted-foreground">{pullProgress.status ?? "In progress..."}</p>
+              <p className="text-sm text-muted-foreground">{pullProgress.status ?? "處理中..."}</p>
               {progressPercent !== null ? (
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-neutral-200">
                   <div className="h-full bg-black transition-all" style={{ width: `${progressPercent}%` }} />
@@ -129,37 +140,37 @@ export default function ModelsPage() {
           {pullError ? <p className="mt-3 text-sm text-red-600">{pullError}</p> : null}
         </PageSection>
 
-        <PageSection title="Local Inventory" description="Installed models available to chat or embed locally.">
+        <PageSection title="本機模型清單" description="可用於聊天或嵌入的已安裝本機模型。">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="px-2 py-3 font-medium">Model</th>
-                  <th className="px-2 py-3 font-medium">Type</th>
-                  <th className="px-2 py-3 font-medium">Size</th>
-                  <th className="px-2 py-3 font-medium">Modified</th>
-                  <th className="px-2 py-3 text-right font-medium">Actions</th>
+                  <th className="px-2 py-3 font-medium">模型</th>
+                  <th className="px-2 py-3 font-medium">類型</th>
+                  <th className="px-2 py-3 font-medium">大小</th>
+                  <th className="px-2 py-3 font-medium">更新時間</th>
+                  <th className="px-2 py-3 text-right font-medium">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {modelsQuery.isPending ? (
                   <tr>
                     <td colSpan={5} className="px-2 py-5 text-muted-foreground">
-                      Loading models...
+                      載入模型中...
                     </td>
                   </tr>
                 ) : null}
                 {modelsQuery.isError ? (
                   <tr>
                     <td colSpan={5} className="px-2 py-5 text-red-600">
-                      Failed to load models: {getErrorMessage(modelsQuery.error as ApiError)}
+                      載入模型失敗：{getErrorMessage(modelsQuery.error as ApiError)}
                     </td>
                   </tr>
                 ) : null}
                 {!modelsQuery.isPending && !modelsQuery.isError && (modelsQuery.data ?? []).length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-2 py-5 text-muted-foreground">
-                      No local models found.
+                      找不到本機模型。
                     </td>
                   </tr>
                 ) : null}
@@ -170,7 +181,7 @@ export default function ModelsPage() {
                       <td className="px-2 py-4 font-medium text-foreground">{model.name}</td>
                       <td className="px-2 py-4 text-muted-foreground">
                         <span className="rounded-full border border-border px-2.5 py-1 text-xs">
-                          {model.model_type}
+                          {formatModelType(model.model_type)}
                         </span>
                       </td>
                       <td className="px-2 py-4 text-muted-foreground">{formatBytes(model.size)}</td>
@@ -183,14 +194,14 @@ export default function ModelsPage() {
                           variant="destructive"
                           size="sm"
                           onClick={() => {
-                            if (window.confirm(`Delete model '${model.name}'?`)) {
+                            if (window.confirm(`要刪除模型「${model.name}」嗎？`)) {
                               deleteMutation.mutate(model.name);
                             }
                           }}
                           disabled={deleteMutation.isPending}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                          Delete
+                          刪除
                         </Button>
                       </td>
                     </tr>

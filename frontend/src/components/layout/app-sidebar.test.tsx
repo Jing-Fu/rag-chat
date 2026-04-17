@@ -40,8 +40,8 @@ describe("AppSidebar", () => {
   it("routes to chat and resets session when no custom new-chat handler is provided", () => {
     render(<AppSidebar />);
 
-    expect(screen.getByText("RAG Workspace")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /new chat/i }));
+    expect(screen.getByText("RAG 工作區")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "新對話" }));
 
     expect(resetSessionSelection).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledWith("/");
@@ -52,7 +52,7 @@ describe("AppSidebar", () => {
 
     render(<AppSidebar onNewChat={onNewChat} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /new chat/i }));
+    fireEvent.click(screen.getByRole("button", { name: "新對話" }));
 
     expect(onNewChat).toHaveBeenCalledTimes(1);
     expect(resetSessionSelection).not.toHaveBeenCalled();
@@ -79,8 +79,33 @@ describe("AppSidebar", () => {
       />,
     );
 
-    fireEvent.click(screen.getByLabelText("Delete session session-"));
+    fireEvent.click(screen.getByLabelText("刪除對話 session-"));
 
     expect(onDeleteSession).toHaveBeenCalledWith("session-1");
+  });
+
+  it("calls the provided delete-all handler", () => {
+    const onDeleteAllSessions = vi.fn();
+
+    render(
+      <AppSidebar
+        sessions={[
+          {
+            id: "session-1",
+            kb_id: "kb-1",
+            prompt_id: null,
+            model_name: "llama3.2",
+            message_count: 1,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ]}
+        onDeleteAllSessions={onDeleteAllSessions}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "全部刪除" }));
+
+    expect(onDeleteAllSessions).toHaveBeenCalledTimes(1);
   });
 });

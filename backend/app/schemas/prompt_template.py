@@ -4,18 +4,18 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
-DEFAULT_USER_PROMPT_TEMPLATE = """Please answer the question using only the provided knowledge base content.
+DEFAULT_USER_PROMPT_TEMPLATE = """請只根據提供的知識庫內容回答問題。
 
-If the content is insufficient to support an answer, say that you do not know and do not fabricate details.
-Prefer concise, grounded answers that summarize the most relevant points.
+如果內容不足以支持答案，請明確說不知道，不要自行捏造細節。
+請優先提供精簡、可驗證且重點明確的回答。
 
-Knowledge base content:
+知識庫內容：
 {context}
 
-Conversation history:
+對話歷史：
 {history}
 
-Question:
+問題：
 {question}"""
 
 

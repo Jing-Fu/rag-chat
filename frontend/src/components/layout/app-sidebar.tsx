@@ -27,26 +27,28 @@ export type AppSidebarProps = {
   selectedSessionId?: string | null;
   onSelectSession?: (sessionId: string) => void;
   onNewChat?: () => void;
+  onDeleteAllSessions?: () => void;
   onDeleteSession?: (sessionId: string) => void;
+  isDeletingAllSessions?: boolean;
   deletingSessionId?: string | null;
 };
 
 const routeItems = [
-  { href: "/", label: "Chat", icon: MessageSquare },
-  { href: "/knowledge", label: "Knowledge Bases", icon: Database },
-  { href: "/models", label: "Models", icon: Cpu },
-  { href: "/prompts", label: "Prompt Templates", icon: PenTool },
-  { href: "/endpoints", label: "API Endpoints", icon: LinkIcon },
+  { href: "/", label: "聊天", icon: MessageSquare },
+  { href: "/knowledge", label: "知識庫", icon: Database },
+  { href: "/models", label: "模型", icon: Cpu },
+  { href: "/prompts", label: "提示詞模板", icon: PenTool },
+  { href: "/endpoints", label: "API 端點", icon: LinkIcon },
 ];
 
 function getRouteLabel(pathname: string) {
-  return routeItems.find((item) => item.href === pathname)?.label ?? "RAG Workspace";
+  return routeItems.find((item) => item.href === pathname)?.label ?? "RAG 工作區";
 }
 
 function getSessionLabel(session: ChatSessionSummary) {
   return session.message_count > 0
-    ? `Session ${session.id.slice(0, 8)} · ${session.message_count} msgs`
-    : `Session ${session.id.slice(0, 8)}`;
+    ? `對話 ${session.id.slice(0, 8)} · ${session.message_count} 則訊息`
+    : `對話 ${session.id.slice(0, 8)}`;
 }
 
 export function AppSidebar({
@@ -56,7 +58,9 @@ export function AppSidebar({
   selectedSessionId = null,
   onSelectSession,
   onNewChat,
+  onDeleteAllSessions,
   onDeleteSession,
+  isDeletingAllSessions = false,
   deletingSessionId = null,
 }: AppSidebarProps) {
   const pathname = usePathname();
@@ -87,12 +91,12 @@ export function AppSidebar({
     <>
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-white/95 px-5 py-4 backdrop-blur lg:hidden">
         <div>
-          <p className="mono-label">local rag</p>
+          <p className="mono-label">本機 rag</p>
           <p className="display-title mt-1 text-lg text-foreground">{getRouteLabel(pathname)}</p>
         </div>
         <button
           type="button"
-          aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+          aria-label={mobileMenuOpen ? "關閉導覽" : "開啟導覽"}
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           className="inline-flex size-10 items-center justify-center rounded-full border border-input bg-card text-foreground"
         >
@@ -105,12 +109,12 @@ export function AppSidebar({
           <div className="flex h-full flex-col gap-6">
             <div className="flex items-start justify-between border-b border-border pb-5">
               <div>
-                <p className="mono-label">workspace</p>
-                <p className="display-title mt-2 text-2xl text-foreground">RAG Workspace</p>
+                <p className="mono-label">工作區</p>
+                <p className="display-title mt-2 text-2xl text-foreground">RAG 工作區</p>
               </div>
               <button
                 type="button"
-                aria-label="Close navigation"
+                aria-label="關閉導覽"
                 onClick={() => setMobileMenuOpen(false)}
                 className="inline-flex size-10 items-center justify-center rounded-full border border-input bg-card text-foreground"
               >
@@ -124,7 +128,7 @@ export function AppSidebar({
               className="inline-flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-neutral-200 px-4 py-3 text-sm font-medium text-neutral-900"
             >
               <Plus className="h-4 w-4" />
-              New Chat
+              新對話
             </button>
 
             <div className="space-y-2">
@@ -149,13 +153,26 @@ export function AppSidebar({
             </div>
 
             <div className="min-h-0 flex-1 border-t border-border pt-5">
-              <p className="mono-label mb-3">sessions</p>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="mono-label">對話紀錄</p>
+                {onDeleteAllSessions && hasSessions ? (
+                  <button
+                    type="button"
+                    onClick={onDeleteAllSessions}
+                    disabled={isDeletingAllSessions}
+                    className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs text-neutral-600 transition hover:bg-neutral-100 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isDeletingAllSessions ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                    全部刪除
+                  </button>
+                ) : null}
+              </div>
               <ScrollArea className="h-full pr-1">
                 <div className="space-y-2 pb-6">
-                  {isSessionsLoading ? <p className="muted-copy px-1">Loading chat sessions...</p> : null}
+                  {isSessionsLoading ? <p className="muted-copy px-1">載入聊天紀錄中...</p> : null}
                   {!isSessionsLoading && sessionsError ? <p className="text-sm text-red-600">{sessionsError}</p> : null}
                   {!isSessionsLoading && !sessionsError && !hasSessions ? (
-                    <p className="muted-copy px-1">No chat sessions yet.</p>
+                    <p className="muted-copy px-1">目前還沒有聊天紀錄。</p>
                   ) : null}
                   {!isSessionsLoading && !sessionsError && sessions.map((session) => (
                     <div key={session.id} className="flex items-center gap-2 rounded-full border border-border px-3 py-2">
@@ -182,9 +199,9 @@ export function AppSidebar({
       <aside className="hidden w-[280px] shrink-0 border-r border-border bg-white lg:flex">
         <div className="flex min-h-screen w-full flex-col px-4 py-5">
           <div className="border-b border-border pb-5">
-            <p className="mono-label">local rag</p>
-            <p className="display-title mt-2 text-2xl text-foreground">RAG Workspace</p>
-            <p className="mt-2 text-sm text-muted-foreground">Grounded chat, local models, and retrieval operations.</p>
+            <p className="mono-label">本機 rag</p>
+            <p className="display-title mt-2 text-2xl text-foreground">RAG 工作區</p>
+            <p className="mt-2 text-sm text-muted-foreground">有依據的對話、本機模型與檢索工作流。</p>
           </div>
 
           <button
@@ -193,7 +210,7 @@ export function AppSidebar({
             className="mt-5 inline-flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-neutral-200 px-4 py-3 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-300"
           >
             <Plus className="h-4 w-4" />
-            New Chat
+            新對話
           </button>
 
           <nav className="mt-6 space-y-2">
@@ -217,13 +234,26 @@ export function AppSidebar({
           </nav>
 
           <div className="mt-8 min-h-0 flex-1 border-t border-border pt-5">
-            <p className="mono-label mb-3">sessions</p>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="mono-label">對話紀錄</p>
+              {onDeleteAllSessions && hasSessions ? (
+                <button
+                  type="button"
+                  onClick={onDeleteAllSessions}
+                  disabled={isDeletingAllSessions}
+                  className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs text-neutral-600 transition hover:bg-neutral-100 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isDeletingAllSessions ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                  全部刪除
+                </button>
+              ) : null}
+            </div>
             <ScrollArea className="h-[calc(100vh-23rem)] pr-1">
               <div className="space-y-2 pb-4">
-                {isSessionsLoading ? <p className="muted-copy px-1">Loading chat sessions...</p> : null}
+                {isSessionsLoading ? <p className="muted-copy px-1">載入聊天紀錄中...</p> : null}
                 {!isSessionsLoading && sessionsError ? <p className="text-sm text-red-600">{sessionsError}</p> : null}
                 {!isSessionsLoading && !sessionsError && !hasSessions ? (
-                  <p className="muted-copy px-1">No chat sessions yet.</p>
+                  <p className="muted-copy px-1">目前還沒有聊天紀錄。</p>
                 ) : null}
                 {!isSessionsLoading &&
                   !sessionsError &&
@@ -250,7 +280,7 @@ export function AppSidebar({
                         {onDeleteSession ? (
                           <button
                             type="button"
-                            aria-label={`Delete session ${session.id.slice(0, 8)}`}
+                            aria-label={`刪除對話 ${session.id.slice(0, 8)}`}
                             onClick={(event) => {
                               event.stopPropagation();
                               onDeleteSession(session.id);

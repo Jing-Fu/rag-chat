@@ -21,11 +21,28 @@ function statusBadge(status: string) {
   return "border-red-200 bg-red-50 text-red-700";
 }
 
+function formatStatus(status: string) {
+  switch (status) {
+    case "active":
+      return "啟用中";
+    case "ready":
+      return "已就緒";
+    case "indexing":
+      return "索引中";
+    case "processing":
+      return "處理中";
+    case "error":
+      return "錯誤";
+    default:
+      return status;
+  }
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return "Unknown error";
+  return "未知錯誤";
 }
 
 export default function KnowledgePage() {
@@ -120,7 +137,7 @@ export default function KnowledgePage() {
   const uploadDocumentMutation = useMutation({
     mutationFn: async (file: File) => {
       if (!selectedKbId) {
-        throw new Error("Please select a knowledge base first.");
+        throw new Error("請先選擇知識庫。");
       }
       return knowledgeApi.upload(selectedKbId, file);
     },
@@ -133,7 +150,7 @@ export default function KnowledgePage() {
   const reindexMutation = useMutation({
     mutationFn: async (docId: string) => {
       if (!selectedKbId) {
-        throw new Error("Please select a knowledge base first.");
+        throw new Error("請先選擇知識庫。");
       }
       return knowledgeApi.reindexDocument(selectedKbId, docId);
     },
@@ -145,7 +162,7 @@ export default function KnowledgePage() {
   const deleteDocumentMutation = useMutation({
     mutationFn: async (docId: string) => {
       if (!selectedKbId) {
-        throw new Error("Please select a knowledge base first.");
+        throw new Error("請先選擇知識庫。");
       }
       return knowledgeApi.deleteDocument(selectedKbId, docId);
     },
@@ -158,11 +175,11 @@ export default function KnowledgePage() {
   function handleCreateKnowledgeBase() {
     setCreateError(null);
     if (!createForm.name.trim()) {
-      setCreateError("Name is required.");
+      setCreateError("名稱為必填。");
       return;
     }
     if (createForm.chunk_overlap >= createForm.chunk_size) {
-      setCreateError("chunk_overlap must be smaller than chunk_size.");
+      setCreateError("chunk_overlap 必須小於 chunk_size。");
       return;
     }
     createKnowledgeBaseMutation.mutate({
@@ -173,7 +190,7 @@ export default function KnowledgePage() {
   }
 
   async function handleDeleteKnowledgeBase(id: string) {
-    if (!window.confirm("Delete this knowledge base and all related documents/chunks?")) {
+    if (!window.confirm("要刪除此知識庫及其所有文件與切塊嗎？")) {
       return;
     }
     await deleteKnowledgeBaseMutation.mutateAsync(id);
@@ -190,20 +207,20 @@ export default function KnowledgePage() {
     <DashboardShell>
       <PageHeader
         icon={<Database className="h-4 w-4" />}
-        title="Knowledge Bases"
-        description="Index source material, inspect ingestion status, and keep retrieval grounded."
+        title="知識庫"
+        description="建立索引、查看匯入狀態，並讓檢索結果維持可追溯。"
         actions={
           <Button type="button" onClick={() => setIsCreateOpen((prev) => !prev)}>
             <Plus className="h-4 w-4" />
-            New Knowledge Base
+            新增知識庫
           </Button>
         }
       />
 
       {isCreateOpen ? (
         <PageSection
-          title="Create Knowledge Base"
-          description="Choose a name, chunking strategy, and embedding model before ingesting files."
+          title="建立知識庫"
+          description="在匯入文件前，先設定名稱、切塊策略與嵌入模型。"
           className="mb-6"
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -211,14 +228,14 @@ export default function KnowledgePage() {
               type="text"
               value={createForm.name}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))}
-              placeholder="Name"
+              placeholder="名稱"
               className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             />
             <input
               type="text"
               value={createForm.embedding_model}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, embedding_model: event.target.value }))}
-              placeholder="Embedding model"
+              placeholder="嵌入模型"
               className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             />
             <input
@@ -227,7 +244,7 @@ export default function KnowledgePage() {
               max={10000}
               value={createForm.chunk_size}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, chunk_size: Number(event.target.value) }))}
-              placeholder="Chunk size"
+              placeholder="切塊大小"
               className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             />
             <input
@@ -236,23 +253,23 @@ export default function KnowledgePage() {
               max={5000}
               value={createForm.chunk_overlap}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, chunk_overlap: Number(event.target.value) }))}
-              placeholder="Chunk overlap"
+              placeholder="切塊重疊"
               className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             />
           </div>
           <textarea
             value={createForm.description}
             onChange={(event) => setCreateForm((prev) => ({ ...prev, description: event.target.value }))}
-            placeholder="Description"
+            placeholder="說明"
             className="mt-3 min-h-24 w-full rounded-xl border border-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/50"
           />
           {createError ? <p className="mt-3 text-sm text-red-600">{createError}</p> : null}
           <div className="mt-4 flex items-center gap-2">
             <Button type="button" onClick={handleCreateKnowledgeBase} disabled={createKnowledgeBaseMutation.isPending}>
-              {createKnowledgeBaseMutation.isPending ? "Creating..." : "Create"}
+              {createKnowledgeBaseMutation.isPending ? "建立中..." : "建立"}
             </Button>
             <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Cancel
+              取消
             </Button>
           </div>
         </PageSection>
@@ -260,8 +277,8 @@ export default function KnowledgePage() {
 
       <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <PageSection
-          title="Libraries"
-          description="Browse all indexed knowledge bases in this workspace."
+          title="知識庫列表"
+          description="瀏覽這個工作區中所有已建立索引的知識庫。"
         >
           <PillPanel className="mb-4 flex items-center gap-2 px-4 py-0">
             <Search className="h-4 w-4 text-muted-foreground" />
@@ -269,20 +286,20 @@ export default function KnowledgePage() {
               type="text"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="Search knowledge bases"
+              placeholder="搜尋知識庫"
               className="h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </PillPanel>
 
           <div className="space-y-2">
-            {knowledgeBasesQuery.isPending ? <p className="muted-copy">Loading knowledge bases...</p> : null}
+            {knowledgeBasesQuery.isPending ? <p className="muted-copy">載入知識庫中...</p> : null}
             {knowledgeBasesQuery.isError ? (
               <p className="text-sm text-red-600">
-                Failed to load knowledge bases: {getErrorMessage(knowledgeBasesQuery.error as ApiError)}
+                載入知識庫失敗：{getErrorMessage(knowledgeBasesQuery.error as ApiError)}
               </p>
             ) : null}
             {!knowledgeBasesQuery.isPending && !knowledgeBasesQuery.isError && filteredItems.length === 0 ? (
-              <p className="muted-copy">No knowledge bases found.</p>
+              <p className="muted-copy">找不到知識庫。</p>
             ) : null}
             {filteredItems.map((item) => {
               const isSelected = item.id === selectedKbId;
@@ -303,14 +320,14 @@ export default function KnowledgePage() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground">{item.name}</p>
                         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                          {item.description ?? "No description"}
+                          {item.description ?? "沒有說明"}
                         </p>
                       </div>
                       <span className={`rounded-full border px-2.5 py-1 text-xs ${statusBadge(item.status)}`}>
-                        {item.status}
+                        {formatStatus(item.status)}
                       </span>
                     </div>
-                    <p className="mt-3 text-xs text-muted-foreground">{item.document_count} documents</p>
+                    <p className="mt-3 text-xs text-muted-foreground">{item.document_count} 份文件</p>
                   </button>
                 </div>
               );
@@ -319,8 +336,8 @@ export default function KnowledgePage() {
         </PageSection>
 
         <PageSection
-          title={selectedKnowledgeBase?.name ?? "Knowledge Base"}
-          description={selectedKnowledgeBase?.description ?? "Inspect files, refresh indexing, and upload new source material."}
+          title={selectedKnowledgeBase?.name ?? "知識庫詳情"}
+          description={selectedKnowledgeBase?.description ?? "查看文件、刷新索引，並上傳新的來源資料。"}
           actions={
             <>
               <input
@@ -340,12 +357,12 @@ export default function KnowledgePage() {
                 disabled={!selectedKbId || uploadDocumentMutation.isPending}
               >
                 <UploadCloud className="h-4 w-4" />
-                {uploadDocumentMutation.isPending ? "Uploading..." : "Upload"}
+                {uploadDocumentMutation.isPending ? "上傳中..." : "上傳"}
               </Button>
               {selectedKnowledgeBase ? (
                 <Button type="button" variant="outline" onClick={() => void handleDeleteKnowledgeBase(selectedKnowledgeBase.id)}>
                   <Trash2 className="h-4 w-4" />
-                  Delete
+                  刪除
                 </Button>
               ) : null}
             </>
@@ -354,10 +371,10 @@ export default function KnowledgePage() {
           {selectedKnowledgeBase ? (
             <div className="mb-5 flex flex-wrap gap-2">
               <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-                chunk size {selectedKnowledgeBase.chunk_size}
+                切塊大小 {selectedKnowledgeBase.chunk_size}
               </span>
               <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-                overlap {selectedKnowledgeBase.chunk_overlap}
+                重疊 {selectedKnowledgeBase.chunk_overlap}
               </span>
               <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
                 {selectedKnowledgeBase.embedding_model}
@@ -365,24 +382,24 @@ export default function KnowledgePage() {
             </div>
           ) : null}
 
-          {!selectedKbId ? <p className="muted-copy">Select a knowledge base to view documents.</p> : null}
-          {selectedKbId && documentsQuery.isPending ? <p className="muted-copy">Loading documents...</p> : null}
+          {!selectedKbId ? <p className="muted-copy">請先選擇知識庫以查看文件。</p> : null}
+          {selectedKbId && documentsQuery.isPending ? <p className="muted-copy">載入文件中...</p> : null}
           {selectedKbId && documentsQuery.isError ? (
             <p className="text-sm text-red-600">
-              Failed to load documents: {getErrorMessage(documentsQuery.error as ApiError)}
+              載入文件失敗：{getErrorMessage(documentsQuery.error as ApiError)}
             </p>
           ) : null}
 
           {selectedKbId && !documentsQuery.isPending && !documentsQuery.isError ? (
             <div className="space-y-3">
-              {(documentsQuery.data ?? []).length === 0 ? <p className="muted-copy">No documents uploaded yet.</p> : null}
+              {(documentsQuery.data ?? []).length === 0 ? <p className="muted-copy">目前還沒有上傳文件。</p> : null}
               {(documentsQuery.data ?? []).map((doc) => (
                 <div key={doc.id} className="rounded-xl border border-border p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">{doc.filename}</p>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {doc.file_type} · {doc.chunk_count} chunks · {doc.status}
+                        {doc.file_type} · {doc.chunk_count} 個切塊 · {formatStatus(doc.status)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -394,7 +411,7 @@ export default function KnowledgePage() {
                         disabled={reindexMutation.isPending}
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
-                        Reindex
+                        重新索引
                       </Button>
                       <Button
                         type="button"
@@ -404,7 +421,7 @@ export default function KnowledgePage() {
                         disabled={deleteDocumentMutation.isPending}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                        Delete
+                        刪除
                       </Button>
                     </div>
                   </div>

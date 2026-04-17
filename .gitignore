@@ -30,3 +30,10 @@ frontend/.next/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# hurness engineering
+AGENTS.md
+progress.md
+feature_list.json
+init.ps1
+

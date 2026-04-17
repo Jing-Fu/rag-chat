@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, literal, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.chunk import Chunk
@@ -11,9 +11,22 @@ async def retrieve_relevant_chunks(
     db: AsyncSession,
     kb_id: uuid.UUID,
     query_embedding: list[float],
+    query_text: str,
     top_k: int = 5,
 ) -> list[dict]:
-    """Retrieve top-k relevant chunks by cosine distance from pgvector."""
+    """Retrieve top-k chunks with hybrid vector and lexical similarity."""
+    normalized_query = query_text.strip()
+    semantic_score = (1 - Chunk.embedding.cosine_distance(query_embedding)).label("semantic_score")
+
+    if normalized_query:
+        lexical_score = func.greatest(
+            func.similarity(Chunk.content, normalized_query),
+            func.similarity(Document.filename, normalized_query),
+        ).label("lexical_score")
+    else:
+        lexical_score = literal(0.0).label("lexical_score")
+
+    hybrid_score = (semantic_score * 0.8 + lexical_score * 0.2).label("relevance_score")
     stmt = (
         select(
             Chunk.id,
@@ -22,12 +35,14 @@ async def retrieve_relevant_chunks(
             Chunk.chunk_index,
             Chunk.metadata_,
             Document.filename,
-            (1 - Chunk.embedding.cosine_distance(query_embedding)).label("relevance_score"),
+            semantic_score,
+            lexical_score,
+            hybrid_score,
         )
         .join(Document, Chunk.doc_id == Document.id)
         .where(Document.kb_id == kb_id)
         .where(Chunk.embedding.is_not(None))
-        .order_by(Chunk.embedding.cosine_distance(query_embedding))
+        .order_by(hybrid_score.desc(), semantic_score.desc(), Chunk.chunk_index.asc())
         .limit(top_k)
     )
 

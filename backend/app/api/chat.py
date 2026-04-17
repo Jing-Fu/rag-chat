@@ -47,6 +47,12 @@ async def get_messages(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)
         raise _to_http_exception(exc) from exc
 
 
+@router.delete("/sessions", status_code=204)
+async def delete_all_sessions(db: AsyncSession = Depends(get_db)):
+    service = ChatService(db)
+    await service.delete_all_sessions()
+
+
 @router.delete("/sessions/{session_id}", status_code=204)
 async def delete_session(session_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     service = ChatService(db)

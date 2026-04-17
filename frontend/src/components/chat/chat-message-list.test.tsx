@@ -21,7 +21,7 @@ describe("ChatMessageList", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Assistant is thinking")).toBeInTheDocument();
+    expect(screen.getByLabelText("助理正在思考")).toBeInTheDocument();
   });
 
   it("renders a Sources label for assistant citations", () => {
@@ -51,7 +51,7 @@ describe("ChatMessageList", () => {
       />,
     );
 
-    expect(screen.getByText("Sources")).toBeInTheDocument();
+    expect(screen.getByText("引用來源")).toBeInTheDocument();
     expect(screen.getByText(/notes.md/)).toBeInTheDocument();
   });
 });

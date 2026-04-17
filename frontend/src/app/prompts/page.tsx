@@ -15,21 +15,21 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  return "Unknown error";
+  return "未知錯誤";
 }
 
-const DEFAULT_USER_TEMPLATE = `Please answer the question using only the provided knowledge base content.
+const DEFAULT_USER_TEMPLATE = `請只根據提供的知識庫內容回答問題。
 
-If the content is insufficient to support an answer, say that you do not know and do not fabricate details.
-Prefer concise, grounded answers that summarize the most relevant points.
+如果內容不足以支持答案，請明確說不知道，不要自行捏造細節。
+請優先提供精簡、可驗證且重點明確的回答。
 
-Knowledge base content:
+知識庫內容：
 {context}
 
-Conversation history:
+對話歷史：
 {history}
 
-Question:
+問題：
 {question}`;
 
 type PromptFormState = {
@@ -138,7 +138,7 @@ export default function PromptsPage() {
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!selectedPromptId) {
-        throw new Error("No prompt selected.");
+        throw new Error("尚未選擇提示詞模板。");
       }
       return promptApi.update(selectedPromptId, {
         name: form.name.trim(),
@@ -159,7 +159,7 @@ export default function PromptsPage() {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!selectedPromptId) {
-        throw new Error("No prompt selected.");
+        throw new Error("尚未選擇提示詞模板。");
       }
       return promptApi.delete(selectedPromptId);
     },
@@ -183,15 +183,15 @@ export default function PromptsPage() {
 
   async function handleSave() {
     if (!form.name.trim()) {
-      setFormError("Template name is required.");
+      setFormError("模板名稱為必填。");
       return;
     }
     if (!form.system_prompt.trim()) {
-      setFormError("System prompt is required.");
+      setFormError("系統提示詞為必填。");
       return;
     }
     if (!form.user_prompt_template.includes("{context}") || !form.user_prompt_template.includes("{question}")) {
-      setFormError("Advanced template must include both {context} and {question}.");
+      setFormError("進階模板必須同時包含 {context} 與 {question}。");
       return;
     }
 
@@ -213,38 +213,38 @@ export default function PromptsPage() {
     <DashboardShell>
       <PageHeader
         icon={<PenTool className="h-4 w-4" />}
-        title="Prompt Templates"
-        description="Define answer behavior, grounding rules, and retrieval injection patterns."
+        title="提示詞模板"
+        description="定義回答風格、依據規則與檢索內容注入方式。"
         actions={
           <Button type="button" onClick={handleNewTemplate}>
             <Plus className="h-4 w-4" />
-            New Template
+            新增模板
           </Button>
         }
       />
 
       <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <PageSection title="Templates" description="Search and switch between system prompt presets.">
+        <PageSection title="模板列表" description="搜尋並切換系統提示詞預設。">
           <PillPanel className="mb-4 flex items-center gap-2 px-4 py-0">
             <Search className="h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="Search templates"
+              placeholder="搜尋模板"
               className="h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </PillPanel>
 
           <div className="space-y-2">
-            {promptsQuery.isPending ? <p className="muted-copy">Loading prompt templates...</p> : null}
+            {promptsQuery.isPending ? <p className="muted-copy">載入提示詞模板中...</p> : null}
             {promptsQuery.isError ? (
               <p className="text-sm text-red-600">
-                Failed to load prompt templates: {getErrorMessage(promptsQuery.error as ApiError)}
+                載入提示詞模板失敗：{getErrorMessage(promptsQuery.error as ApiError)}
               </p>
             ) : null}
             {!promptsQuery.isPending && !promptsQuery.isError && filteredItems.length === 0 ? (
-              <p className="muted-copy">No prompt templates found.</p>
+              <p className="muted-copy">找不到提示詞模板。</p>
             ) : null}
             {filteredItems.map((item) => {
               const isSelected = selectedPromptId === item.id && !isCreatingNew;
@@ -265,13 +265,13 @@ export default function PromptsPage() {
                     <div>
                       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground">
                         <Globe className="h-3.5 w-3.5" />
-                        System Prompt
+                        系統提示詞
                       </div>
                       <p className="text-sm font-medium text-foreground">{item.name}</p>
                       <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">{item.system_prompt}</p>
                     </div>
                     <span className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground">
-                      {item.is_default ? "Default" : `${item.temperature.toFixed(1)} temp`}
+                      {item.is_default ? "預設" : `溫度 ${item.temperature.toFixed(1)}`}
                     </span>
                   </div>
                 </button>
@@ -281,27 +281,27 @@ export default function PromptsPage() {
         </PageSection>
 
         <PageSection
-          title={selectedPromptId && !isCreatingNew ? "Edit Template" : "Create Template"}
-          description="Tune the system prompt first. Only expand the retrieval template if the default injection is not enough."
+          title={selectedPromptId && !isCreatingNew ? "編輯模板" : "建立模板"}
+          description="先調整系統提示詞。只有在預設注入方式不夠時，才需要展開進階檢索模板。"
         >
           <div className="space-y-4">
             <input
               type="text"
               value={form.name}
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              placeholder="Template name"
+              placeholder="模板名稱"
               className="h-11 w-full rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             />
 
             <textarea
               value={form.system_prompt}
               onChange={(event) => setForm((prev) => ({ ...prev, system_prompt: event.target.value }))}
-              placeholder="System prompt"
+              placeholder="系統提示詞"
               className="min-h-40 w-full rounded-xl border border-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             />
 
             <div className="rounded-xl border border-border bg-neutral-50 px-4 py-4 text-sm text-muted-foreground">
-              Use the system prompt for tone, refusal behavior, citation habits, and grounding rules. Advanced retrieval templating is optional for most cases.
+              透過系統提示詞控制語氣、拒答方式、引用習慣與 grounded 規則。大多數情況下不需要額外調整進階檢索模板。
             </div>
 
             <div className="rounded-xl border border-border">
@@ -313,8 +313,8 @@ export default function PromptsPage() {
                 <div className="flex items-center gap-3">
                   <Settings2 className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Advanced Retrieval Template</p>
-                    <p className="text-xs text-muted-foreground">Controls how context, history, and the question are injected into the user message.</p>
+                    <p className="text-sm font-medium text-foreground">進階檢索模板</p>
+                    <p className="text-xs text-muted-foreground">控制如何把內容上下文、歷史對話與問題注入到使用者訊息中。</p>
                   </div>
                 </div>
                 {showAdvanced ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
@@ -325,18 +325,18 @@ export default function PromptsPage() {
                   <textarea
                     value={form.user_prompt_template}
                     onChange={(event) => setForm((prev) => ({ ...prev, user_prompt_template: event.target.value }))}
-                    placeholder="User prompt template"
+                    placeholder="使用者提示詞模板"
                     className="min-h-48 w-full rounded-xl border border-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/50"
                   />
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Required placeholders: <code>{"{context}"}</code> and <code>{"{question}"}</code>. Optional placeholder: <code>{"{history}"}</code>.
+                    必填變數：<code>{"{context}"}</code> 與 <code>{"{question}"}</code>。可選變數：<code>{"{history}"}</code>。
                   </p>
                 </div>
               ) : null}
             </div>
 
             <div>
-              <label className="text-sm text-muted-foreground">Temperature: {form.temperature.toFixed(1)}</label>
+              <label className="text-sm text-muted-foreground">溫度：{form.temperature.toFixed(1)}</label>
               <input
                 type="range"
                 min={0}
@@ -354,7 +354,7 @@ export default function PromptsPage() {
                 checked={form.is_default}
                 onChange={(event) => setForm((prev) => ({ ...prev, is_default: event.target.checked }))}
               />
-              Set as default
+              設為預設模板
             </label>
 
             {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
@@ -365,21 +365,21 @@ export default function PromptsPage() {
                 onClick={() => void handleSave()}
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                {selectedPromptId && !isCreatingNew ? "Save Changes" : "Create Template"}
+                {selectedPromptId && !isCreatingNew ? "儲存變更" : "建立模板"}
               </Button>
               {selectedPromptId && !isCreatingNew ? (
                 <Button
                   type="button"
                   variant="destructive"
                   onClick={() => {
-                    if (window.confirm("Delete this prompt template?")) {
+                    if (window.confirm("要刪除此提示詞模板嗎？")) {
                       void deleteMutation.mutateAsync();
                     }
                   }}
                   disabled={deleteMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4" />
-                  Delete
+                  刪除
                 </Button>
               ) : null}
             </div>

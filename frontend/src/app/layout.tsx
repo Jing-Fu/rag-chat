@@ -5,8 +5,8 @@ import { Providers } from "@/app/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "RAG Workspace",
-  description: "Local-first RAG workspace for grounded conversations and model operations.",
+  title: "RAG 工作區",
+  description: "以本機優先為核心的 RAG 工作區，提供有依據的對話與模型操作。",
 };
 
 export default function RootLayout({
