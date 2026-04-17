@@ -129,7 +129,6 @@ describe("Home chat viewport", () => {
         id: "prompt-1",
         name: "default",
         system_prompt: "",
-        user_prompt_template: "",
         temperature: 0,
         is_default: true,
         created_at: new Date().toISOString(),

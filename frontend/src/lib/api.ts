@@ -172,7 +172,6 @@ export type PromptTemplate = {
   id: string;
   name: string;
   system_prompt: string;
-  user_prompt_template: string;
   temperature: number;
   is_default: boolean;
   created_at: string;
@@ -181,7 +180,6 @@ export type PromptTemplate = {
 export type PromptTemplateCreateInput = {
   name: string;
   system_prompt: string;
-  user_prompt_template?: string;
   temperature?: number;
   is_default?: boolean;
 };

@@ -43,7 +43,6 @@ async def test_update_default_prompt_promotes_replacement_when_unchecked() -> No
         id=prompt_id,
         name="default",
         system_prompt="sys",
-        user_prompt_template="{question}",
         temperature=0.7,
         is_default=True,
         created_at=datetime.now(UTC),

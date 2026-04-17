@@ -12,10 +12,23 @@ from app.schemas.chat import ChatRequest
 from app.schemas.prompt_template import PromptTemplateResponse
 from app.services.knowledge_service import ServiceError
 
+DEFAULT_RAG_USER_PROMPT = """請只根據提供的知識庫內容回答問題。
+
+如果內容不足以支持答案，請明確說不知道，不要自行捏造細節。
+請優先提供精簡、可驗證且重點明確的回答。
+
+知識庫內容：
+{context}
+
+對話歷史：
+{history}
+
+問題：
+{question}"""
+
 
 def build_rag_prompt(
     system_prompt: str,
-    user_template: str,
     context_chunks: list[dict],
     question: str,
     chat_history: list[ChatMessage],
@@ -30,7 +43,7 @@ def build_rag_prompt(
     ]
     context_text = "\n\n".join(context_lines)
 
-    user_prompt = user_template.format(
+    user_prompt = DEFAULT_RAG_USER_PROMPT.format(
         context=context_text,
         question=question,
         history=history_text,
@@ -68,7 +81,6 @@ async def stream_rag_response(
 
     system_prompt, user_prompt = build_rag_prompt(
         system_prompt=prompt_template.system_prompt,
-        user_template=prompt_template.user_prompt_template,
         context_chunks=chunks,
         question=request.message,
         chat_history=chat_history,

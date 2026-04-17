@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, Globe, PenTool, Plus, Search, Settings2, Trash2 } from "lucide-react";
+import { Globe, PenTool, Plus, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
@@ -18,24 +18,9 @@ function getErrorMessage(error: unknown): string {
   return "未知錯誤";
 }
 
-const DEFAULT_USER_TEMPLATE = `請只根據提供的知識庫內容回答問題。
-
-如果內容不足以支持答案，請明確說不知道，不要自行捏造細節。
-請優先提供精簡、可驗證且重點明確的回答。
-
-知識庫內容：
-{context}
-
-對話歷史：
-{history}
-
-問題：
-{question}`;
-
 type PromptFormState = {
   name: string;
   system_prompt: string;
-  user_prompt_template: string;
   temperature: number;
   is_default: boolean;
 };
@@ -43,7 +28,6 @@ type PromptFormState = {
 const defaultFormState: PromptFormState = {
   name: "",
   system_prompt: "",
-  user_prompt_template: DEFAULT_USER_TEMPLATE,
   temperature: 0.7,
   is_default: false,
 };
@@ -53,7 +37,6 @@ export default function PromptsPage() {
   const [keyword, setKeyword] = useState("");
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState<PromptFormState>(defaultFormState);
 
@@ -75,8 +58,7 @@ export default function PromptsPage() {
     return promptsQuery.data.filter((item) => {
       return (
         item.name.toLowerCase().includes(query) ||
-        item.system_prompt.toLowerCase().includes(query) ||
-        item.user_prompt_template.toLowerCase().includes(query)
+        item.system_prompt.toLowerCase().includes(query)
       );
     });
   }, [keyword, promptsQuery.data]);
@@ -116,11 +98,9 @@ export default function PromptsPage() {
     setForm({
       name: selected.name,
       system_prompt: selected.system_prompt,
-      user_prompt_template: selected.user_prompt_template,
       temperature: selected.temperature,
       is_default: selected.is_default,
     });
-    setShowAdvanced(selected.user_prompt_template !== DEFAULT_USER_TEMPLATE);
     setFormError(null);
   }, [isCreatingNew, promptsQuery.data, selectedPromptId]);
 
@@ -143,7 +123,6 @@ export default function PromptsPage() {
       return promptApi.update(selectedPromptId, {
         name: form.name.trim(),
         system_prompt: form.system_prompt,
-        user_prompt_template: form.user_prompt_template,
         temperature: form.temperature,
         is_default: form.is_default,
       });
@@ -176,7 +155,6 @@ export default function PromptsPage() {
   function handleNewTemplate() {
     setIsCreatingNew(true);
     setSelectedPromptId(null);
-    setShowAdvanced(false);
     setForm(defaultFormState);
     setFormError(null);
   }
@@ -190,10 +168,6 @@ export default function PromptsPage() {
       setFormError("系統提示詞為必填。");
       return;
     }
-    if (!form.user_prompt_template.includes("{context}") || !form.user_prompt_template.includes("{question}")) {
-      setFormError("進階模板必須同時包含 {context} 與 {question}。");
-      return;
-    }
 
     if (selectedPromptId) {
       await updateMutation.mutateAsync();
@@ -203,7 +177,6 @@ export default function PromptsPage() {
     await createMutation.mutateAsync({
       name: form.name.trim(),
       system_prompt: form.system_prompt,
-      user_prompt_template: form.user_prompt_template,
       temperature: form.temperature,
       is_default: form.is_default,
     });
@@ -214,7 +187,7 @@ export default function PromptsPage() {
       <PageHeader
         icon={<PenTool className="h-4 w-4" />}
         title="提示詞模板"
-        description="定義回答風格、依據規則與檢索內容注入方式。"
+        description="定義回答風格、依據規則與模型回應傾向。"
         actions={
           <Button type="button" onClick={handleNewTemplate}>
             <Plus className="h-4 w-4" />
@@ -282,7 +255,7 @@ export default function PromptsPage() {
 
         <PageSection
           title={selectedPromptId && !isCreatingNew ? "編輯模板" : "建立模板"}
-          description="先調整系統提示詞。只有在預設注入方式不夠時，才需要展開進階檢索模板。"
+          description="調整系統提示詞、溫度與預設設定。"
         >
           <div className="space-y-4">
             <input
@@ -301,38 +274,7 @@ export default function PromptsPage() {
             />
 
             <div className="rounded-xl border border-border bg-neutral-50 px-4 py-4 text-sm text-muted-foreground">
-              透過系統提示詞控制語氣、拒答方式、引用習慣與 grounded 規則。大多數情況下不需要額外調整進階檢索模板。
-            </div>
-
-            <div className="rounded-xl border border-border">
-              <button
-                type="button"
-                onClick={() => setShowAdvanced((prev) => !prev)}
-                className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <Settings2 className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">進階檢索模板</p>
-                    <p className="text-xs text-muted-foreground">控制如何把內容上下文、歷史對話與問題注入到使用者訊息中。</p>
-                  </div>
-                </div>
-                {showAdvanced ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-              </button>
-
-              {showAdvanced ? (
-                <div className="border-t border-border px-4 pb-4 pt-3">
-                  <textarea
-                    value={form.user_prompt_template}
-                    onChange={(event) => setForm((prev) => ({ ...prev, user_prompt_template: event.target.value }))}
-                    placeholder="使用者提示詞模板"
-                    className="min-h-48 w-full rounded-xl border border-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/50"
-                  />
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    必填變數：<code>{"{context}"}</code> 與 <code>{"{question}"}</code>。可選變數：<code>{"{history}"}</code>。
-                  </p>
-                </div>
-              ) : null}
+              透過系統提示詞控制語氣、拒答方式、引用習慣與 grounded 規則。檢索上下文的注入格式由系統統一管理。
             </div>
 
             <div>
