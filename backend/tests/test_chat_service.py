@@ -1,9 +1,14 @@
 import uuid
 from datetime import UTC, datetime
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+
+import pytest
 
 from app.schemas.chat import ChatRequest
 from app.schemas.prompt_template import PromptTemplateResponse
 from app.services.chat_service import ChatService
+from app.services.knowledge_service import ServiceError
 
 
 class FakeAsyncSession:
@@ -87,3 +92,33 @@ async def test_delete_all_sessions_executes_bulk_delete() -> None:
     assert db.commit_count == 1
     assert len(db.executed) == 1
     assert "DELETE FROM chat_sessions" in str(db.executed[0])
+
+
+async def test_resolve_prompt_template_falls_back_to_first_prompt_when_no_default() -> None:
+    prompt_id = uuid.uuid4()
+    db = AsyncMock()
+    db.scalar.return_value = SimpleNamespace(
+        id=prompt_id,
+        name="Fallback",
+        system_prompt="system",
+        user_prompt_template="{question}",
+        temperature=0.7,
+        is_default=False,
+        created_at=datetime.now(UTC),
+    )
+    service = ChatService(db)
+
+    prompt = await service._resolve_prompt_template(None)
+
+    assert isinstance(prompt, PromptTemplateResponse)
+    assert prompt.id == prompt_id
+    db.scalar.assert_awaited_once()
+
+
+async def test_resolve_prompt_template_raises_when_no_prompt_exists() -> None:
+    db = AsyncMock()
+    db.scalar.return_value = None
+    service = ChatService(db)
+
+    with pytest.raises(ServiceError, match="Prompt template not found"):
+        await service._resolve_prompt_template(None)

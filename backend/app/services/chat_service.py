@@ -141,12 +141,11 @@ class ChatService:
         if prompt_id:
             prompt_model = await self.db.get(PromptTemplate, prompt_id)
         else:
-            stmt = (
-                select(PromptTemplate)
-                .where(PromptTemplate.is_default.is_(True))
-                .order_by(PromptTemplate.created_at.asc())
+            stmt = select(PromptTemplate).order_by(
+                PromptTemplate.is_default.desc(),
+                PromptTemplate.created_at.asc(),
             )
-            prompt_model = (await self.db.execute(stmt)).scalars().first()
+            prompt_model = await self.db.scalar(stmt)
 
         if prompt_model is None:
             raise ServiceError("Prompt template not found", status_code=404)

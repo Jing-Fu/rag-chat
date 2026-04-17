@@ -21,15 +21,19 @@ class PromptService:
         self.db = db
 
     async def list_prompts(self) -> list[PromptTemplateResponse]:
-        stmt = select(PromptTemplate).order_by(PromptTemplate.created_at.desc())
+        stmt = select(PromptTemplate).order_by(
+            PromptTemplate.is_default.desc(),
+            PromptTemplate.created_at.asc(),
+        )
         rows = (await self.db.execute(stmt)).scalars().all()
         return [PromptTemplateResponse.model_validate(row) for row in rows]
 
     async def create_prompt(self, data: PromptTemplateCreate) -> PromptTemplateResponse:
-        if data.is_default:
-            await self.db.execute(update(PromptTemplate).values(is_default=False))
+        should_be_default = data.is_default or not await self._has_default_prompt()
+        if should_be_default:
+            await self._clear_default_flags()
 
-        prompt = PromptTemplate(**data.model_dump())
+        prompt = PromptTemplate(**(data.model_dump() | {"is_default": should_be_default}))
         self.db.add(prompt)
         await self.db.commit()
         await self.db.refresh(prompt)
@@ -51,8 +55,14 @@ class PromptService:
             raise ServiceError("Prompt template not found", status_code=404)
 
         updates = data.model_dump(exclude_unset=True)
-        if updates.get("is_default"):
-            await self.db.execute(update(PromptTemplate).values(is_default=False))
+        if updates.get("is_default") is True:
+            await self._clear_default_flags(exclude_prompt_id=prompt_id)
+        elif updates.get("is_default") is False and prompt.is_default:
+            replacement_prompt = await self._get_replacement_prompt(prompt_id)
+            if replacement_prompt is None:
+                updates["is_default"] = True
+            else:
+                replacement_prompt.is_default = True
 
         for key, value in updates.items():
             setattr(prompt, key, value)
@@ -69,7 +79,10 @@ class PromptService:
         prompt_count = await self.db.scalar(select(func.count(PromptTemplate.id)))
         if (prompt_count or 0) <= 1:
             raise ServiceError(
-                "At least one prompt template is required. Create another template before deleting this one.",
+                (
+                    "At least one prompt template is required. "
+                    "Create another template before deleting this one."
+                ),
                 status_code=409,
             )
 
@@ -99,3 +112,22 @@ class PromptService:
 
         await self.db.delete(prompt)
         await self.db.commit()
+
+    async def _has_default_prompt(self) -> bool:
+        default_prompt_count = await self.db.scalar(
+            select(func.count(PromptTemplate.id)).where(PromptTemplate.is_default.is_(True))
+        )
+        return (default_prompt_count or 0) > 0
+
+    async def _clear_default_flags(self, exclude_prompt_id: uuid.UUID | None = None) -> None:
+        stmt = update(PromptTemplate).values(is_default=False)
+        if exclude_prompt_id is not None:
+            stmt = stmt.where(PromptTemplate.id != exclude_prompt_id)
+        await self.db.execute(stmt)
+
+    async def _get_replacement_prompt(self, prompt_id: uuid.UUID) -> PromptTemplate | None:
+        return await self.db.scalar(
+            select(PromptTemplate)
+            .where(PromptTemplate.id != prompt_id)
+            .order_by(PromptTemplate.is_default.desc(), PromptTemplate.created_at.asc())
+        )

@@ -1,11 +1,62 @@
 import uuid
+from datetime import UTC, datetime
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from app.schemas.prompt_template import PromptTemplateCreate, PromptTemplateUpdate
 from app.services.knowledge_service import ServiceError
 from app.services.prompt_service import PromptService
+
+
+@pytest.mark.asyncio
+async def test_create_first_prompt_auto_marks_default() -> None:
+    db = AsyncMock()
+    db.add = Mock()
+    db.scalar.return_value = 0
+
+    service = PromptService(db)
+
+    async def _refresh_prompt(prompt) -> None:
+        prompt.id = uuid.uuid4()
+        prompt.created_at = datetime.now(UTC)
+
+    db.refresh.side_effect = _refresh_prompt
+
+    await service.create_prompt(PromptTemplateCreate(name="default", system_prompt="sys"))
+
+    inserted_prompt = db.add.call_args.args[0]
+
+    assert inserted_prompt.is_default is True
+    assert db.execute.await_count == 1
+    assert "UPDATE prompt_templates" in str(db.execute.await_args.args[0])
+
+
+@pytest.mark.asyncio
+async def test_update_default_prompt_promotes_replacement_when_unchecked() -> None:
+    prompt_id = uuid.uuid4()
+    replacement = SimpleNamespace(id=uuid.uuid4(), is_default=False)
+
+    db = AsyncMock()
+    db.get.return_value = SimpleNamespace(
+        id=prompt_id,
+        name="default",
+        system_prompt="sys",
+        user_prompt_template="{question}",
+        temperature=0.7,
+        is_default=True,
+        created_at=datetime.now(UTC),
+    )
+    db.scalar.return_value = replacement
+
+    service = PromptService(db)
+
+    await service.update_prompt(prompt_id, PromptTemplateUpdate(is_default=False))
+
+    assert replacement.is_default is True
+    assert db.get.return_value.is_default is False
+    db.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
