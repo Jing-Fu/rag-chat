@@ -1,100 +1,115 @@
-﻿# RAG Chat Platform
+# RAG Chat Platform
 
-Self-hosted, local-first RAG developer platform MVP.
+這是一個自架、以本機優先為核心的 RAG 工作區，透過 Next.js 前端、FastAPI 後端、PostgreSQL + pgvector，以及本機 Ollama 模型，讓你能直接和自己的文件對話。
 
-## Stack
+## 特色重點
 
-- Frontend: Next.js 14 + TypeScript + React Query + Zustand
-- Backend: FastAPI + SQLAlchemy + Alembic
-- Data: PostgreSQL 16 + pgvector
-- LLM/Embedding: Ollama
+- 以 SSE 串流回應的有依據聊天體驗，並提供每次回答的來源引用
+- 結合向量相似度與 `pg_trgm` 文字相似度的混合檢索
+- 用於本機文件匯入與檢索的知識庫管理介面
+- 模型、提示詞模板與 API 端點管理介面
+- 同源 frontend `/api/*` proxy，支援 Docker 與本機開發流程
+- 主要產品頁面已提供繁體中文 UI
 
-## Monorepo
+## 架構
 
-- `frontend/`: Web UI (`/`, `/knowledge`, `/prompts`, `/models`, `/endpoints`)
-- `backend/`: REST/SSE API and RAG pipeline
-- `docs/`: Product and implementation specs
+- `frontend/`：Next.js 14 App Router 介面，涵蓋聊天、知識庫、提示詞、模型與端點頁面
+- `backend/`：FastAPI REST/SSE API、SQLAlchemy model、Alembic migration 與 RAG service
+- `postgres`：PostgreSQL 16，並啟用 `pgvector`
+- `ollama`：本機聊天模型與 embedding 模型執行環境
+- `docs/`：設計 spec、實作計畫與目前使用中的前端改版文件
 
-## API Groups
+主要 API 群組：
 
 - `/api/health`
+- `/api/chat`
 - `/api/knowledge`
-- `/api/chat` (SSE streaming)
-- `/api/endpoints`
 - `/api/models`
 - `/api/prompts`
+- `/api/endpoints`
 
-## Prerequisites
+> [!NOTE]
+> frontend 會透過同源 `/api/*` 路由與 backend 溝通。在 Docker Compose 中，這是由 `API_PROXY_TARGET=http://backend:8000` 串接；在本機開發時，如果沒有設定 `NEXT_PUBLIC_API_URL`，frontend 會從瀏覽器 hostname 推導 backend host，並預設連到 `8000` port。
 
-- Docker + Docker Compose
-- (Local dev) Python 3.12 + `uv`
-- (Local dev) Node.js 20+
+## 先決條件
 
-## Quick Start (Docker Compose)
+- Docker Desktop 或支援 Compose 的 Docker Engine
+- 本機 backend 開發需要 Python 3.12 與 [`uv`](https://docs.astral.sh/uv/)
+- 本機 frontend 開發需要 Node.js 20+
 
-1. Copy environment template:
+## 快速啟動
 
-```powershell
-cp .env.example .env
-```
-
-2. Build and start all services:
+1. 複製環境變數範本。
 
 ```powershell
-docker compose up --build
+Copy-Item .env.example .env
 ```
 
-Optional: if your machine has Docker GPU passthrough configured for Ollama, start with the GPU override:
+2. 啟動整個 stack。
 
 ```powershell
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
+docker compose up --build -d
 ```
 
-3. Access services:
-
-- Frontend: [http://localhost:3000](http://localhost:3000)
-- Backend health: [http://localhost:8000/api/health](http://localhost:8000/api/health)
-- Ollama API: [http://localhost:11434](http://localhost:11434)
-
-Local development also supports opening the frontend from [http://127.0.0.1:3000](http://127.0.0.1:3000). When `NEXT_PUBLIC_API_URL` is unset, the frontend now derives the backend host from the current browser hostname and targets port `8000`.
-
-4. (First run) pull required Ollama models:
+3. 執行資料庫 migration。
 
 ```powershell
-docker compose exec ollama ollama pull llama3.2
-docker compose exec ollama ollama pull nomic-embed-text
+docker compose exec backend uv run alembic upgrade head
 ```
 
-## Ollama GPU Mode
+4. 拉取預設 Ollama 模型。
 
-Use [docker-compose.gpu.yml](docker-compose.gpu.yml) as an override when you want Ollama to run with NVIDIA GPU access.
+```powershell
+docker compose exec ollama ollama pull gemma4:e4b
+docker compose exec ollama ollama pull nomic-embed-text:latest
+```
 
-Requirements:
+5. 開啟應用程式與 health endpoint。
 
-- Windows: Docker Desktop with WSL2 GPU support enabled and a working NVIDIA driver on the host
-- Linux: NVIDIA driver + `nvidia-container-toolkit`
-- Docker must support `--gpus` / Compose `gpus: all`
+- Frontend：[http://localhost:3000](http://localhost:3000)
+- Backend health：[http://localhost:8000/api/health](http://localhost:8000/api/health)
+- Ollama API：[http://localhost:11434](http://localhost:11434)
 
-Start the stack in GPU mode:
+> [!IMPORTANT]
+> Compose stack 不會自動套用 Alembic migration。第一次啟動後，以及每次 schema 有更新時，都需要在 backend 容器內手動執行 `uv run alembic upgrade head`。
+
+## Ollama GPU 模式
+
+如果你的環境已經完成 Docker GPU passthrough 設定，可以用 GPU override 啟動 Ollama：
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
 ```
 
-Verify Ollama is actually using GPU instead of CPU:
+用下面的指令確認 Ollama 是否有正確偵測到 GPU：
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml logs ollama --tail 50
 ```
 
-If GPU is active, Ollama logs should mention a detected GPU device instead of CPU-only inference.
+GPU 需求：
 
-## Local Development
+- Windows：Docker Desktop 已啟用 WSL2 GPU 支援，且主機安裝可用的 NVIDIA driver
+- Linux：已安裝 NVIDIA driver 與 `nvidia-container-toolkit`
+
+## 本機開發
+
+開始前，先還原 repo 上下文並執行共用驗證入口：
+
+```powershell
+.\init.ps1
+```
+
+只有在依賴尚未安裝時，才需要先補裝：
+
+```powershell
+.\init.ps1 -Install
+```
 
 ### Backend
 
 ```powershell
-cd backend
+Set-Location backend
 uv sync --extra dev
 uv run alembic upgrade head
 uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -103,35 +118,61 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ### Frontend
 
 ```powershell
-cd frontend
+Set-Location frontend
 npm install
 npm run dev
 ```
 
-## Testing
+本機開發常用網址：
 
-### Backend
+- Frontend：[http://localhost:3000](http://localhost:3000) 或 [http://127.0.0.1:3000](http://127.0.0.1:3000)
+- Backend API：[http://localhost:8000](http://localhost:8000)
 
-```powershell
-cd backend
-uv run pytest -q
-```
+## 驗證
 
-### Frontend
+優先使用的 repo 根目錄入口：
 
 ```powershell
-cd frontend
-npm run test
-npm run build
+.\init.ps1
 ```
 
-## Docker Images
+針對性的驗證指令：
 
-- `backend/Dockerfile`: Python 3.12 + `uv`, runs `uvicorn app.main:app`
-- `frontend/Dockerfile`: Next.js standalone production image
+```powershell
+Set-Location frontend; npm run test
+Set-Location frontend; npm run build
+Set-Location frontend; npm run test:smoke
+Set-Location backend; uv run pytest -q
+Set-Location backend; uv run ruff check .
+```
 
-## Notes
+請優先執行和本次變更最相關、範圍最小的驗證集合。
 
-- The app is local-first and does not include authentication or multi-tenant features in MVP.
-- Chat and model operations depend on Ollama availability.
-- File uploads are validated by backend type/size constraints.
+## 設定
+
+`.env.example` 中較重要的 backend 環境變數：
+
+- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
+- `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `OLLAMA_EMBEDDING_MODEL`
+- `CORS_ORIGINS`
+- `UPLOAD_MAX_SIZE_MB`, `UPLOAD_DIR`
+
+Compose 專用的 frontend 環境變數：
+
+- `API_PROXY_TARGET`：容器環境中，提供給 Next.js proxy route 使用的 backend origin
+
+## Repo 結構
+
+- `frontend/`：Next.js 應用程式、共用 UI 元件、client store、Vitest 測試與 Playwright smoke script
+- `backend/`：FastAPI 應用程式、service、schema、Alembic migration 與 pytest 測試
+- `docs/`：產品 spec 與目前前端改版的參考文件
+- `uploads/`：backend 使用的本機上傳儲存目錄
+- `progress.md`：session 交接紀錄與驗證歷史
+- `feature_list.json`：repo 功能狀態追蹤快照
+
+## 目前產品範圍
+
+- 以本機優先為主的單一使用者工作流程
+- 目前 MVP 不包含 authentication 或 multi-tenant 功能
+- 聊天、檢索與 endpoint query 功能都依賴可正常運作的 Ollama runtime
+- 檢索品質會受已索引文件、所選提示詞模板與模型影響
