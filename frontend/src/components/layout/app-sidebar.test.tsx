@@ -17,7 +17,11 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/components/ui/scroll-area", () => ({
-  ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ScrollArea: ({ children, className, ...props }: React.ComponentProps<"div">) => (
+    <div className={className} {...props}>
+      {children}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/ui/dropdown-menu", () => ({
@@ -107,5 +111,29 @@ describe("AppSidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: "全部刪除" }));
 
     expect(onDeleteAllSessions).toHaveBeenCalledTimes(1);
+  });
+
+  it("constrains the session list inside a dedicated scroll area and shows the session count", () => {
+    render(
+      <AppSidebar
+        sessions={Array.from({ length: 12 }, (_, index) => ({
+          id: `session-${index}`,
+          kb_id: "kb-1",
+          prompt_id: null,
+          model_name: "llama3.2",
+          message_count: index + 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }))}
+      />,
+    );
+
+    expect(screen.getByText("12 筆")).toBeInTheDocument();
+    expect(screen.getByTestId("desktop-session-scroll-area")).toHaveClass("h-0", "flex-1");
+
+    fireEvent.click(screen.getByRole("button", { name: "開啟導覽" }));
+
+    expect(screen.getAllByText("12 筆")).toHaveLength(2);
+    expect(screen.getByTestId("mobile-session-scroll-area")).toHaveClass("h-0", "flex-1");
   });
 });

@@ -67,6 +67,7 @@ export function AppSidebar({
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const hasSessions = sessions.length > 0;
+  const sessionCountLabel = `${sessions.length} 筆`;
   const resetSessionSelection = useChatUiStore((state) => state.resetSessionSelection);
 
   function handleNewChatClick() {
@@ -152,9 +153,12 @@ export function AppSidebar({
               })}
             </div>
 
-            <div className="min-h-0 flex-1 border-t border-border pt-5">
+            <div className="flex min-h-0 flex-1 flex-col border-t border-border pt-5">
               <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="mono-label">對話紀錄</p>
+                <div>
+                  <p className="mono-label">對話紀錄</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{sessionCountLabel}</p>
+                </div>
                 {onDeleteAllSessions && hasSessions ? (
                   <button
                     type="button"
@@ -167,7 +171,7 @@ export function AppSidebar({
                   </button>
                 ) : null}
               </div>
-              <ScrollArea className="h-full pr-1">
+              <ScrollArea data-testid="mobile-session-scroll-area" className="h-0 flex-1 pr-1">
                 <div className="space-y-2 pb-6">
                   {isSessionsLoading ? <p className="muted-copy px-1">載入聊天紀錄中...</p> : null}
                   {!isSessionsLoading && sessionsError ? <p className="text-sm text-red-600">{sessionsError}</p> : null}
@@ -233,9 +237,12 @@ export function AppSidebar({
             })}
           </nav>
 
-          <div className="mt-8 min-h-0 flex-1 border-t border-border pt-5">
+          <div className="mt-8 flex min-h-0 flex-1 flex-col border-t border-border pt-5">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="mono-label">對話紀錄</p>
+              <div>
+                <p className="mono-label">對話紀錄</p>
+                <p className="mt-1 text-xs text-muted-foreground">{sessionCountLabel}</p>
+              </div>
               {onDeleteAllSessions && hasSessions ? (
                 <button
                   type="button"
@@ -248,7 +255,7 @@ export function AppSidebar({
                 </button>
               ) : null}
             </div>
-            <ScrollArea className="min-h-0 flex-1 pr-1">
+            <ScrollArea data-testid="desktop-session-scroll-area" className="h-0 flex-1 pr-1">
               <div className="space-y-2 pb-4">
                 {isSessionsLoading ? <p className="muted-copy px-1">載入聊天紀錄中...</p> : null}
                 {!isSessionsLoading && sessionsError ? <p className="text-sm text-red-600">{sessionsError}</p> : null}
