@@ -43,7 +43,7 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           disabled={disabled || isSending}
           placeholder={placeholder}
-          className="min-h-[52px] max-h-[200px] w-full resize-none bg-transparent px-4 py-3 text-[15px] text-foreground outline-none placeholder:text-neutral-400 disabled:opacity-50"
+          className="min-h-[52px] max-h-[200px] w-full resize-none overflow-y-auto bg-transparent px-4 py-3 text-[15px] text-foreground outline-none placeholder:text-neutral-400 disabled:opacity-50"
           rows={rows}
         />
         <div className="flex items-center justify-between px-2 pb-1">

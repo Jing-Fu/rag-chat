@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ChatHeader } from "@/components/chat/chat-header";
 import { ChatInput } from "@/components/chat/chat-input";
@@ -43,6 +43,7 @@ function getErrorMessage(error: unknown): string | null {
 
 export default function Home() {
   const queryClient = useQueryClient();
+  const messageViewportRef = useRef<HTMLDivElement | null>(null);
   const [composerValue, setComposerValue] = useState("");
   const [streamError, setStreamError] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -50,6 +51,7 @@ export default function Home() {
   const [isDeletingAllSessions, setIsDeletingAllSessions] = useState(false);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessageItem[] | null>(null);
+  const [shouldStickToBottom, setShouldStickToBottom] = useState(true);
 
   const modelsQuery = useQuery({
     queryKey: ["models"],
@@ -194,6 +196,43 @@ export default function Home() {
 
   const canSend = Boolean(selectedKnowledgeBaseId && selectedModelName && !isDataLoading && !pageError);
 
+  useEffect(() => {
+    setShouldStickToBottom(true);
+  }, [selectedSessionId]);
+
+  useEffect(() => {
+    const viewport = messageViewportRef.current;
+
+    if (!viewport) {
+      return;
+    }
+
+    const handleScroll = () => {
+      const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+      setShouldStickToBottom(distanceFromBottom <= 96);
+    };
+
+    handleScroll();
+    viewport.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      viewport.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    const viewport = messageViewportRef.current;
+
+    if (!viewport || !shouldStickToBottom) {
+      return;
+    }
+
+    viewport.scrollTo({
+      top: viewport.scrollHeight,
+      behavior: isStreaming ? "auto" : "smooth",
+    });
+  }, [isStreaming, messageList, shouldStickToBottom]);
+
   function handleSelectSession(sessionId: string) {
     setSelectedSessionId(sessionId);
     setOptimisticMessages(null);
@@ -280,6 +319,7 @@ export default function Home() {
       created_at: new Date().toISOString(),
     };
 
+    setShouldStickToBottom(true);
     setComposerValue("");
     setStreamError(null);
     setPendingRequestMessage(message);
@@ -384,7 +424,7 @@ export default function Home() {
 
   return (
     <DashboardShell
-      mainClassName="flex flex-1 flex-col px-5 pt-0 sm:px-8 lg:px-10"
+      mainClassName="flex min-h-0 flex-1 flex-col overflow-hidden px-5 pt-0 sm:px-8 lg:px-10"
       sidebarProps={{
         sessions: sessionsQuery.data ?? [],
         isSessionsLoading: sessionsQuery.isPending,
@@ -413,7 +453,7 @@ export default function Home() {
         />
       }
       footer={
-        <div className="border-t border-border bg-white px-5 py-5 sm:px-8 lg:px-10">
+        <div className="shrink-0 border-t border-border bg-white px-5 py-5 sm:px-8 lg:px-10">
           <div className="mx-auto max-w-5xl">
             <ChatInput
               value={composerValue}
@@ -435,9 +475,9 @@ export default function Home() {
         </div>
       }
     >
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
+      <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col">
         {(pageError || messagesError || (!pageError && !isDataLoading && (knowledgeBasesQuery.data?.length ?? 0) === 0)) && (
-          <div className="space-y-3 pt-6">
+          <div className="shrink-0 space-y-3 pt-6">
             {pageError ? (
               <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 <p className="flex items-center gap-2 font-medium">
@@ -463,45 +503,50 @@ export default function Home() {
             ) : null}
           </div>
         )}
-
-        {messageList.length > 0 && !messagesError ? (
-          <div className="flex-1 pt-8">
-            <ChatMessageList messages={messageList} isStreaming={isStreaming} />
-          </div>
-        ) : null}
-
-        {showEmptyState ? (
-          <div className="flex flex-1 flex-col items-center justify-center px-0 py-12 text-center sm:px-4">
-            <p className="mono-label">本機 rag 工作區</p>
-            <h2 className="display-title mt-5 max-w-3xl text-4xl leading-none text-foreground sm:text-5xl">
-              用自己的資料問出更有依據的答案。
-            </h2>
-            <p className="mt-4 max-w-xl text-[15px] leading-7 text-muted-foreground">
-              先選擇模型、提示詞與知識庫。介面會保持簡潔，讓檢索到的上下文真正發揮作用。
-            </p>
-
-            <div className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
-              {EMPTY_STATE_PROMPTS.map((item) => (
-                <button
-                  key={item.title}
-                  type="button"
-                  onClick={() => setComposerValue(item.prompt)}
-                  className="surface-panel p-5 text-left transition-colors hover:bg-neutral-50"
-                >
-                  <span className="mono-label text-neutral-400">範例提問</span>
-                  <span className="mt-3 block text-base font-medium text-foreground">{item.title}</span>
-                  <span className="mt-2 block text-sm leading-6 text-muted-foreground">{item.description}</span>
-                </button>
-              ))}
+        <div
+          ref={messageViewportRef}
+          data-testid="chat-message-viewport"
+          className="min-h-0 flex-1 overflow-y-auto"
+        >
+          {messageList.length > 0 && !messagesError ? (
+            <div className="min-h-full pt-8">
+              <ChatMessageList messages={messageList} isStreaming={isStreaming} />
             </div>
+          ) : null}
 
-            <p className="mt-8 text-xs text-muted-foreground">
-              目前知識庫：
-              {" "}
-              {knowledgeBasesQuery.data?.find((item) => item.id === selectedKnowledgeBaseId)?.name ?? "尚未選擇"}
-            </p>
-          </div>
-        ) : null}
+          {showEmptyState ? (
+            <div className="flex min-h-full flex-col items-center justify-center px-0 py-12 text-center sm:px-4">
+              <p className="mono-label">本機 rag 工作區</p>
+              <h2 className="display-title mt-5 max-w-3xl text-4xl leading-none text-foreground sm:text-5xl">
+                用自己的資料問出更有依據的答案。
+              </h2>
+              <p className="mt-4 max-w-xl text-[15px] leading-7 text-muted-foreground">
+                先選擇模型、提示詞與知識庫。介面會保持簡潔，讓檢索到的上下文真正發揮作用。
+              </p>
+
+              <div className="mt-10 grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
+                {EMPTY_STATE_PROMPTS.map((item) => (
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={() => setComposerValue(item.prompt)}
+                    className="surface-panel p-5 text-left transition-colors hover:bg-neutral-50"
+                  >
+                    <span className="mono-label text-neutral-400">範例提問</span>
+                    <span className="mt-3 block text-base font-medium text-foreground">{item.title}</span>
+                    <span className="mt-2 block text-sm leading-6 text-muted-foreground">{item.description}</span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="mt-8 text-xs text-muted-foreground">
+                目前知識庫：
+                {" "}
+                {knowledgeBasesQuery.data?.find((item) => item.id === selectedKnowledgeBaseId)?.name ?? "尚未選擇"}
+              </p>
+            </div>
+          ) : null}
+        </div>
       </div>
     </DashboardShell>
   );

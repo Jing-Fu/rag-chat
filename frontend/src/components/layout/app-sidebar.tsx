@@ -196,8 +196,8 @@ export function AppSidebar({
         </div>
       ) : null}
 
-      <aside className="hidden w-[280px] shrink-0 border-r border-border bg-white lg:flex">
-        <div className="flex min-h-screen w-full flex-col px-4 py-5">
+      <aside className="hidden h-full min-h-0 w-[280px] shrink-0 border-r border-border bg-white lg:flex">
+        <div className="flex h-full min-h-0 w-full flex-col px-4 py-5">
           <div className="border-b border-border pb-5">
             <p className="mono-label">本機 rag</p>
             <p className="display-title mt-2 text-2xl text-foreground">RAG 工作區</p>
@@ -248,7 +248,7 @@ export function AppSidebar({
                 </button>
               ) : null}
             </div>
-            <ScrollArea className="h-[calc(100vh-23rem)] pr-1">
+            <ScrollArea className="min-h-0 flex-1 pr-1">
               <div className="space-y-2 pb-4">
                 {isSessionsLoading ? <p className="muted-copy px-1">載入聊天紀錄中...</p> : null}
                 {!isSessionsLoading && sessionsError ? <p className="text-sm text-red-600">{sessionsError}</p> : null}
