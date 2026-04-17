@@ -54,4 +54,49 @@ describe("ChatMessageList", () => {
     expect(screen.getByText("引用來源")).toBeInTheDocument();
     expect(screen.getByText(/notes.md/)).toBeInTheDocument();
   });
+
+  it("renders markdown content inside assistant messages", () => {
+    render(
+      <ChatMessageList
+        messages={[
+          {
+            id: "assistant-3",
+            session_id: "session-1",
+            role: "assistant",
+            content:
+              "# 標題\n\n- 第一項\n- 第二項\n\n`const answer = 42;`\n\n[文件](https://example.com/docs)",
+            sources: { items: [] },
+            created_at: new Date().toISOString(),
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { level: 1, name: "標題" })).toBeInTheDocument();
+    expect(screen.getByText("第一項")).toBeInTheDocument();
+    expect(screen.getByText("const answer = 42;")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "文件" })).toHaveAttribute(
+      "href",
+      "https://example.com/docs",
+    );
+  });
+
+  it("preserves plain line breaks after enabling markdown rendering", () => {
+    const { container } = render(
+      <ChatMessageList
+        messages={[
+          {
+            id: "assistant-4",
+            session_id: "session-1",
+            role: "assistant",
+            content: "第一行\n第二行",
+            sources: { items: [] },
+            created_at: new Date().toISOString(),
+          },
+        ]}
+      />,
+    );
+
+    expect(container.querySelector("br")).not.toBeNull();
+  });
 });

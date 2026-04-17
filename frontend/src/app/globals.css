@@ -86,4 +86,100 @@
     font-family: var(--font-mono), monospace;
     @apply text-[11px] uppercase tracking-[0.28em] text-neutral-400;
   }
+
+  .chat-markdown {
+    @apply text-sm leading-6;
+  }
+
+  .chat-markdown > :first-child {
+    margin-top: 0;
+  }
+
+  .chat-markdown > :last-child {
+    margin-bottom: 0;
+  }
+
+  .chat-markdown :where(p, ul, ol, blockquote, pre, table, hr) {
+    @apply my-4;
+  }
+
+  .chat-markdown :where(ul, ol) {
+    @apply pl-6;
+  }
+
+  .chat-markdown ul {
+    list-style: disc;
+  }
+
+  .chat-markdown ol {
+    list-style: decimal;
+  }
+
+  .chat-markdown li::marker {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .chat-markdown li + li {
+    @apply mt-1;
+  }
+
+  .chat-markdown a {
+    @apply underline decoration-current underline-offset-4;
+    word-break: break-word;
+  }
+
+  .chat-markdown blockquote {
+    @apply border-l-2 border-border pl-4 italic text-muted-foreground;
+  }
+
+  .chat-markdown hr {
+    @apply border-border;
+  }
+
+  .chat-markdown code {
+    font-family: var(--font-mono), monospace;
+    @apply rounded bg-muted px-1.5 py-0.5 text-[0.92em];
+  }
+
+  .chat-markdown pre {
+    font-family: var(--font-mono), monospace;
+    @apply overflow-x-auto rounded-xl border border-border bg-neutral-950 px-4 py-3 text-xs text-neutral-50;
+  }
+
+  .chat-markdown pre code {
+    @apply bg-transparent p-0 text-inherit;
+  }
+
+  .chat-markdown table {
+    @apply min-w-full border-collapse text-left text-xs sm:text-sm;
+  }
+
+  .chat-markdown th,
+  .chat-markdown td {
+    @apply border border-border px-3 py-2 align-top;
+  }
+
+  .chat-markdown th {
+    @apply bg-muted font-medium text-foreground;
+  }
+
+  .chat-markdown-user a {
+    @apply text-background/90;
+  }
+
+  .chat-markdown-user blockquote {
+    @apply border-background/30 text-background/80;
+  }
+
+  .chat-markdown-user code {
+    @apply bg-background/15 text-background;
+  }
+
+  .chat-markdown-user pre {
+    @apply border-background/15 bg-black text-white;
+  }
+
+  .chat-markdown-user th {
+    @apply bg-background/10 text-background;
+  }
 }

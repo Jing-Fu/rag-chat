@@ -1,3 +1,7 @@
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
+
 import type { ChatMessageItem, ChatSourceItem } from "@/lib/api";
 
 function getSources(message: ChatMessageItem): ChatSourceItem[] {
@@ -14,6 +18,27 @@ function ThinkingIndicator() {
       <span className="size-2 rounded-full bg-current animate-pulse [animation-delay:-0.15s]" />
       <span className="size-2 rounded-full bg-current animate-pulse" />
     </span>
+  );
+}
+
+function MarkdownMessage({
+  content,
+  isUser,
+}: {
+  content: string;
+  isUser: boolean;
+}) {
+  return (
+    <div className={`chat-markdown break-words ${isUser ? "chat-markdown-user" : ""}`}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        components={{
+          a: ({ ...props }) => <a {...props} rel="noreferrer" target="_blank" />,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 }
 
@@ -51,7 +76,7 @@ export function ChatMessageList({ messages, isStreaming = false }: ChatMessageLi
                   <ThinkingIndicator />
                 </div>
               ) : (
-                <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                <MarkdownMessage content={message.content} isUser={isUser} />
               )}
               {!isUser && sources.length > 0 && (
                 <div className="mt-4 rounded-[12px] border border-border bg-muted px-3 py-3 text-xs text-muted-foreground">
