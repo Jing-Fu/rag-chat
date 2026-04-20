@@ -104,3 +104,84 @@ async def test_reindex_document_returns_response(monkeypatch) -> None:
     assert response.status_code == 200
     assert response.json()["id"] == str(doc_id)
     assert response.json()["status"] == "ready"
+
+
+async def test_create_knowledge_base_rejects_non_embedding_model(monkeypatch) -> None:
+    create_called = False
+
+    async def _mock_list_models(self):
+        return [
+            {
+                "name": "llama3.2",
+                "size": 10,
+                "model_type": "llm",
+                "modified_at": None,
+            }
+        ]
+
+    async def _mock_create(self, data):
+        nonlocal create_called
+        create_called = True
+        raise AssertionError("create_knowledge_base should not be called")
+
+    monkeypatch.setattr(
+        "app.services.model_service.ModelService.list_models",
+        _mock_list_models,
+    )
+    monkeypatch.setattr(
+        "app.services.knowledge_service.KnowledgeService.create_knowledge_base",
+        _mock_create,
+    )
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await client.post(
+            "/api/knowledge",
+            json={
+                "name": "KB 1",
+                "embedding_model": "llama3.2",
+            },
+        )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Model 'llama3.2' is not an embedding model"
+    assert create_called is False
+
+
+async def test_update_knowledge_base_rejects_unavailable_embedding_model(monkeypatch) -> None:
+    update_called = False
+
+    async def _mock_list_models(self):
+        return [
+            {
+                "name": "nomic-embed-text",
+                "size": 10,
+                "model_type": "embed",
+                "modified_at": None,
+            }
+        ]
+
+    async def _mock_update(self, kb_id, data):
+        nonlocal update_called
+        update_called = True
+        raise AssertionError("update_knowledge_base should not be called")
+
+    monkeypatch.setattr(
+        "app.services.model_service.ModelService.list_models",
+        _mock_list_models,
+    )
+    monkeypatch.setattr(
+        "app.services.knowledge_service.KnowledgeService.update_knowledge_base",
+        _mock_update,
+    )
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await client.put(
+            f"/api/knowledge/{uuid.uuid4()}",
+            json={"embedding_model": "missing-embed"},
+        )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Embedding model 'missing-embed' is not available"
+    assert update_called is False

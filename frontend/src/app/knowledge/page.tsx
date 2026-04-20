@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PageSection } from "@/components/layout/page-section";
 import { PillPanel } from "@/components/layout/pill-panel";
 import { Button } from "@/components/ui/button";
-import { type ApiError, knowledgeApi } from "@/lib/api";
+import { type ApiError, knowledgeApi, modelApi } from "@/lib/api";
 
 function statusBadge(status: string) {
   if (status === "ready" || status === "active") {
@@ -45,25 +45,38 @@ function getErrorMessage(error: unknown): string {
   return "未知錯誤";
 }
 
+function getDefaultCreateForm() {
+  return {
+    name: "",
+    description: "",
+    chunk_size: 1000,
+    chunk_overlap: 200,
+    embedding_model: "",
+  };
+}
+
 export default function KnowledgePage() {
   const queryClient = useQueryClient();
   const [keyword, setKeyword] = useState("");
   const [selectedKbId, setSelectedKbId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [createForm, setCreateForm] = useState({
-    name: "",
-    description: "",
-    chunk_size: 1000,
-    chunk_overlap: 200,
-    embedding_model: "nomic-embed-text",
-  });
+  const [createForm, setCreateForm] = useState(getDefaultCreateForm);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const knowledgeBasesQuery = useQuery({
     queryKey: ["knowledge-bases"],
     queryFn: knowledgeApi.list,
   });
+  const modelsQuery = useQuery({
+    queryKey: ["models"],
+    queryFn: modelApi.list,
+  });
+
+  const embedModels = useMemo(
+    () => (modelsQuery.data ?? []).filter((model) => model.model_type === "embed"),
+    [modelsQuery.data],
+  );
 
   useEffect(() => {
     if (!knowledgeBasesQuery.data || knowledgeBasesQuery.data.length === 0) {
@@ -79,6 +92,22 @@ export default function KnowledgePage() {
       setSelectedKbId(knowledgeBasesQuery.data[0].id);
     }
   }, [knowledgeBasesQuery.data, selectedKbId]);
+
+  useEffect(() => {
+    if (embedModels.length === 0) {
+      if (createForm.embedding_model) {
+        setCreateForm((prev) => ({ ...prev, embedding_model: "" }));
+      }
+      return;
+    }
+
+    const hasSelectedEmbeddingModel = embedModels.some(
+      (model) => model.name === createForm.embedding_model,
+    );
+    if (!hasSelectedEmbeddingModel) {
+      setCreateForm((prev) => ({ ...prev, embedding_model: embedModels[0].name }));
+    }
+  }, [createForm.embedding_model, embedModels]);
 
   const filteredItems = useMemo(() => {
     if (!knowledgeBasesQuery.data) {
@@ -113,13 +142,7 @@ export default function KnowledgePage() {
       setSelectedKbId(created.id);
       setIsCreateOpen(false);
       setCreateError(null);
-      setCreateForm({
-        name: "",
-        description: "",
-        chunk_size: 1000,
-        chunk_overlap: 200,
-        embedding_model: "nomic-embed-text",
-      });
+      setCreateForm(getDefaultCreateForm());
     },
     onError: (error) => {
       setCreateError(getErrorMessage(error));
@@ -178,6 +201,18 @@ export default function KnowledgePage() {
       setCreateError("名稱為必填。");
       return;
     }
+    if (modelsQuery.isPending) {
+      setCreateError("嵌入模型載入中，請稍候再試。");
+      return;
+    }
+    if (modelsQuery.isError) {
+      setCreateError("目前無法載入嵌入模型，請稍後再試。");
+      return;
+    }
+    if (!createForm.embedding_model) {
+      setCreateError("請先選擇可用的嵌入模型。");
+      return;
+    }
     if (createForm.chunk_overlap >= createForm.chunk_size) {
       setCreateError("chunk_overlap 必須小於 chunk_size。");
       return;
@@ -202,6 +237,12 @@ export default function KnowledgePage() {
     }
     await uploadDocumentMutation.mutateAsync(file);
   }
+
+  const disableCreateKnowledgeBase =
+    createKnowledgeBaseMutation.isPending
+    || modelsQuery.isPending
+    || modelsQuery.isError
+    || embedModels.length === 0;
 
   return (
     <DashboardShell>
@@ -231,13 +272,28 @@ export default function KnowledgePage() {
               placeholder="名稱"
               className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
             />
-            <input
-              type="text"
+            <select
               value={createForm.embedding_model}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, embedding_model: event.target.value }))}
-              placeholder="嵌入模型"
+              disabled={modelsQuery.isPending || embedModels.length === 0}
+              aria-label="嵌入模型"
               className="h-11 rounded-full border border-input px-4 text-sm outline-none focus:ring-2 focus:ring-ring/50"
-            />
+            >
+              <option value="">
+                {modelsQuery.isPending
+                  ? "載入嵌入模型中..."
+                  : modelsQuery.isError
+                    ? "嵌入模型載入失敗"
+                    : embedModels.length === 0
+                      ? "沒有可用的嵌入模型"
+                      : "選擇嵌入模型"}
+              </option>
+              {embedModels.map((model) => (
+                <option key={model.name} value={model.name}>
+                  {model.name}
+                </option>
+              ))}
+            </select>
             <input
               type="number"
               min={100}
@@ -263,9 +319,19 @@ export default function KnowledgePage() {
             placeholder="說明"
             className="mt-3 min-h-24 w-full rounded-xl border border-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/50"
           />
+          {modelsQuery.isError ? (
+            <p className="mt-3 text-sm text-red-600">
+              載入嵌入模型失敗：{getErrorMessage(modelsQuery.error as ApiError)}
+            </p>
+          ) : null}
+          {!modelsQuery.isPending && !modelsQuery.isError && embedModels.length === 0 ? (
+            <p className="mt-3 text-sm text-amber-700">
+              目前沒有可用的嵌入模型，請先到模型頁面下載至少一個 embedding model。
+            </p>
+          ) : null}
           {createError ? <p className="mt-3 text-sm text-red-600">{createError}</p> : null}
           <div className="mt-4 flex items-center gap-2">
-            <Button type="button" onClick={handleCreateKnowledgeBase} disabled={createKnowledgeBaseMutation.isPending}>
+            <Button type="button" onClick={handleCreateKnowledgeBase} disabled={disableCreateKnowledgeBase}>
               {createKnowledgeBaseMutation.isPending ? "建立中..." : "建立"}
             </Button>
             <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>

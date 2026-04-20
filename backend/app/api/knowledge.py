@@ -13,12 +13,35 @@ from app.schemas.knowledge_base import (
     KnowledgeBaseUpdate,
 )
 from app.services.knowledge_service import KnowledgeService, ServiceError
+from app.services.model_service import ModelService
 
 router = APIRouter(prefix="/api/knowledge", tags=["knowledge"])
 
 
 def _to_http_exception(exc: ServiceError) -> HTTPException:
     return HTTPException(status_code=exc.status_code, detail=exc.detail)
+
+
+async def _validate_embedding_model(model_name: str) -> None:
+    model_service = ModelService()
+
+    try:
+        models = await model_service.list_models()
+    except ServiceError as exc:
+        raise _to_http_exception(exc) from exc
+
+    selected_model = next((model for model in models if model["name"] == model_name), None)
+    if selected_model is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Embedding model '{model_name}' is not available",
+        )
+
+    if selected_model.get("model_type") != "embed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Model '{model_name}' is not an embedding model",
+        )
 
 
 @router.get("", response_model=list[KnowledgeBaseResponse])
@@ -29,6 +52,7 @@ async def list_knowledge_bases(db: AsyncSession = Depends(get_db)):
 
 @router.post("", response_model=KnowledgeBaseResponse, status_code=201)
 async def create_knowledge_base(data: KnowledgeBaseCreate, db: AsyncSession = Depends(get_db)):
+    await _validate_embedding_model(data.embedding_model)
     service = KnowledgeService(db)
     return await service.create_knowledge_base(data)
 
@@ -48,6 +72,9 @@ async def update_knowledge_base(
     data: KnowledgeBaseUpdate,
     db: AsyncSession = Depends(get_db),
 ):
+    if data.embedding_model is not None:
+        await _validate_embedding_model(data.embedding_model)
+
     service = KnowledgeService(db)
     kb = await service.update_knowledge_base(kb_id, data)
     if kb is None:

@@ -1,25 +1,57 @@
+<div align="center">
+
+<img src="./frontend/src/app/favicon.ico" alt="RAG Chat Platform icon" width="72" height="72" />
+
 # RAG Chat Platform
 
-這是一個自架、以本機優先為核心的 RAG 工作區，透過 Next.js 前端、FastAPI 後端、PostgreSQL + pgvector，以及本機 Ollama 模型，讓你能直接和自己的文件對話。
+本機優先的自架 RAG 工作區，結合 Next.js、FastAPI、PostgreSQL + pgvector 與 Ollama，讓你可以匯入文件、建立知識庫，並用本機模型做可追溯的問答與 API 查詢。
 
-## 特色重點
+<p>
+	<img src="https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js" alt="Next.js 14" />
+	<img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
+	<img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 16" />
+	<img src="https://img.shields.io/badge/Ollama-Local%20Models-111111?style=flat-square" alt="Ollama" />
+</p>
 
-- 以 SSE 串流回應的有依據聊天體驗，並提供每次回答的來源引用
-- 聊天訊息支援 Markdown / GFM 顯示，可直接呈現標題、清單、程式碼區塊、表格與連結
-- 結合向量相似度與 `pg_trgm` 文字相似度的混合檢索
-- 用於本機文件匯入與檢索的知識庫管理介面
-- 模型、提示詞模板與 API 端點管理介面，並自動維持可用的預設提示詞模板
-- 檢索上下文注入格式由系統固定管理，不提供自訂檢索模板
-- 同源 frontend `/api/*` proxy，支援 Docker 與本機開發流程
-- 主要產品頁面已提供繁體中文 UI
+[功能](#功能) • [快速開始](#快速開始) • [本機開發](#本機開發) • [設定](#設定) • [驗證](#驗證)
+
+</div>
+
+## 概覽
+
+這個 monorepo 提供一套完整的 local-first RAG 工作流：
+
+- 用聊天介面與知識庫互動，回應以 SSE 串流輸出並附來源片段
+- 管理知識庫、文件、提示詞模板、本機模型與對外查詢端點
+- 以 PostgreSQL + pgvector 儲存向量與文件切塊，並結合文字相似度做混合檢索
+- 透過 frontend 同源 `/api/*` proxy 與 backend 溝通，保留乾淨的瀏覽器存取體驗
+
+> [!NOTE]
+> 專案目前聚焦在單一工作區、local-first 的使用情境，不包含 authentication 或 multi-tenant 功能。
+
+## 功能
+
+- **Grounded chat**：聊天介面可選擇模型、提示詞與知識庫，回應支援串流、Markdown 顯示與來源引用
+- **Knowledge base management**：建立知識庫、上傳文件、查看索引狀態、重新索引與刪除文件；建立時會從已安裝的 embedding model 下拉選擇，並驗證模型確實可用
+- **Prompt templates**：管理系統提示詞與溫度設定，並維持可用的預設模板
+- **Local model inventory**：列出本機模型、串流下載模型進度，並刪除不需要的模型
+- **API endpoints**：把知識庫、提示詞與模型組合成可重複使用的查詢端點，支援 API key 輪替與查詢測試
+- **Hybrid retrieval**：結合 pgvector 向量相似度與 `pg_trgm` 文字相似度，提高文件召回品質
+- **SSE-friendly proxying**：frontend 的同源 proxy 會正確透傳聊天與模型下載串流，不會在完成後額外卡住
+
+### 支援的文件格式
+
+可匯入並建立索引的文件類型：`.txt`、`.md`、`.csv`、`.pdf`、`.docx`。
 
 ## 架構
 
-- `frontend/`：Next.js 14 App Router 介面，涵蓋聊天、知識庫、提示詞、模型與端點頁面
-- `backend/`：FastAPI REST/SSE API、SQLAlchemy model、Alembic migration 與 RAG service
-- `postgres`：PostgreSQL 16，並啟用 `pgvector`
-- `ollama`：本機聊天模型與 embedding 模型執行環境
-- `docs/`：設計 spec、實作計畫與目前使用中的前端改版文件
+| 元件 | 說明 |
+| --- | --- |
+| `frontend/` | Next.js 14 App Router 介面，提供聊天、知識庫、模型、提示詞與端點管理頁面 |
+| `backend/` | FastAPI API、SQLAlchemy model、Alembic migration、RAG service 與 pytest 測試 |
+| `postgres` | PostgreSQL 16，搭配 `pgvector` 儲存向量資料 |
+| `ollama` | 本機 LLM 與 embedding 模型執行環境 |
+| `docs/` | 規格、設計與尚未收尾功能盤點 |
 
 主要 API 群組：
 
@@ -30,16 +62,15 @@
 - `/api/prompts`
 - `/api/endpoints`
 
-> [!NOTE]
-> frontend 會透過同源 `/api/*` 路由與 backend 溝通。在 Docker Compose 中，這是由 `API_PROXY_TARGET=http://backend:8000` 串接；在本機開發時，如果沒有設定 `NEXT_PUBLIC_API_URL`，frontend 會從瀏覽器 hostname 推導 backend host，並預設連到 `8000` port。
+## 快速開始
 
-## 先決條件
+### 先決條件
 
 - Docker Desktop 或支援 Compose 的 Docker Engine
-- 本機 backend 開發需要 Python 3.12 與 [`uv`](https://docs.astral.sh/uv/)
-- 本機 frontend 開發需要 Node.js 20+
+- 若要本機開發 backend：Python 3.12+ 與 `uv`
+- 若要本機開發 frontend：Node.js 20+
 
-## 快速啟動
+### 用 Docker Compose 啟動
 
 1. 複製環境變數範本。
 
@@ -53,56 +84,41 @@ Copy-Item .env.example .env
 docker compose up --build -d
 ```
 
-3. 執行資料庫 migration。
+3. 套用資料庫 migration。
 
 ```powershell
 docker compose exec backend uv run alembic upgrade head
 ```
 
-4. 拉取預設 Ollama 模型。
+4. 拉取至少一個聊天模型與一個 embedding 模型。
 
 ```powershell
 docker compose exec ollama ollama pull gemma4:e4b
+docker compose exec ollama ollama pull qwen3.5:4b
 docker compose exec ollama ollama pull nomic-embed-text:latest
 ```
 
-5. 開啟應用程式與 health endpoint。
+5. 開啟服務。
 
-- Frontend：[http://localhost:3000](http://localhost:3000)
-- Backend health：[http://localhost:8000/api/health](http://localhost:8000/api/health)
-- Ollama API：[http://localhost:11434](http://localhost:11434)
+- Frontend：http://localhost:3000
+- Backend health：http://localhost:8000/api/health
+- Ollama API：http://localhost:11434
 
 > [!IMPORTANT]
-> Compose stack 不會自動套用 Alembic migration。第一次啟動後，以及每次 schema 有更新時，都需要在 backend 容器內手動執行 `uv run alembic upgrade head`。
+> `docker compose up` 不會自動執行 Alembic migration。第一次啟動、更新 schema 之後，或切換到新資料庫時，都要手動執行 `uv run alembic upgrade head`。
 
-## Ollama GPU 模式
-
-如果你的環境已經完成 Docker GPU passthrough 設定，可以用 GPU override 啟動 Ollama：
-
-```powershell
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
-```
-
-用下面的指令確認 Ollama 是否有正確偵測到 GPU：
-
-```powershell
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml logs ollama --tail 50
-```
-
-GPU 需求：
-
-- Windows：Docker Desktop 已啟用 WSL2 GPU 支援，且主機安裝可用的 NVIDIA driver
-- Linux：已安裝 NVIDIA driver 與 `nvidia-container-toolkit`
+> [!TIP]
+> Compose 中 frontend 會透過 `API_PROXY_TARGET=http://backend:8000` 使用同源 `/api/*` proxy。瀏覽器只需要打 `http://localhost:3000`，不需要另外設定 API base URL。
 
 ## 本機開發
 
-開始前，先還原 repo 上下文並執行共用驗證入口：
+開始前，建議先用 repo 內建入口檢查依賴與驗證流程：
 
 ```powershell
 .\init.ps1
 ```
 
-只有在依賴尚未安裝時，才需要先補裝：
+如果依賴尚未安裝，再執行：
 
 ```powershell
 .\init.ps1 -Install
@@ -127,18 +143,46 @@ npm run dev
 
 本機開發常用網址：
 
-- Frontend：[http://localhost:3000](http://localhost:3000) 或 [http://127.0.0.1:3000](http://127.0.0.1:3000)
-- Backend API：[http://localhost:8000](http://localhost:8000)
+- Frontend：http://localhost:3000
+- Backend API：http://localhost:8000
+
+## 介面一覽
+
+- `/`：聊天工作區，支援 session 歷史、模型／提示詞／知識庫切換與串流回應
+- `/knowledge`：知識庫與文件管理
+- `/models`：本機模型列表、下載與刪除
+- `/prompts`：提示詞模板管理
+- `/endpoints`：API 端點建立、API key 輪替與查詢測試
+
+## 設定
+
+`.env.example` 中常用的環境變數如下：
+
+| 變數 | 用途 |
+| --- | --- |
+| `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | PostgreSQL 連線設定 |
+| `OLLAMA_BASE_URL` | Ollama API 位址 |
+| `OLLAMA_MODEL` | 預設聊天模型名稱 |
+| `OLLAMA_EMBEDDING_MODEL` | 預設 embedding 模型名稱 |
+| `CORS_ORIGINS` | backend 允許的前端來源 |
+| `UPLOAD_MAX_SIZE_MB` | 單檔上傳大小上限 |
+| `UPLOAD_DIR` | 文件上傳儲存目錄 |
+
+Compose 專用的 frontend 環境變數：
+
+| 變數 | 用途 |
+| --- | --- |
+| `API_PROXY_TARGET` | Next.js proxy 轉送 backend 時使用的目標 origin |
 
 ## 驗證
 
-優先使用的 repo 根目錄入口：
+優先使用 repo 根目錄的共用入口：
 
 ```powershell
 .\init.ps1
 ```
 
-針對性的驗證指令：
+針對單一區域時，可用下列最小驗證集合：
 
 ```powershell
 Set-Location frontend; npm run test
@@ -148,33 +192,17 @@ Set-Location backend; uv run pytest -q
 Set-Location backend; uv run ruff check .
 ```
 
-請優先執行和本次變更最相關、範圍最小的驗證集合。
+## 專案結構
 
-## 設定
+```text
+.
+|-- frontend/        # Next.js 介面與 Vitest 測試
+|-- backend/         # FastAPI API、RAG service、Alembic、pytest
+|-- docs/            # 規格、設計與盤點文件
+|-- docker-compose.yml
+|-- init.ps1         # 共用安裝 / 驗證入口
+|-- .env.example
+```
 
-`.env.example` 中較重要的 backend 環境變數：
-
-- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
-- `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `OLLAMA_EMBEDDING_MODEL`
-- `CORS_ORIGINS`
-- `UPLOAD_MAX_SIZE_MB`, `UPLOAD_DIR`
-
-Compose 專用的 frontend 環境變數：
-
-- `API_PROXY_TARGET`：容器環境中，提供給 Next.js proxy route 使用的 backend origin
-
-## Repo 結構
-
-- `frontend/`：Next.js 應用程式、共用 UI 元件、client store、Vitest 測試與 Playwright smoke script
-- `backend/`：FastAPI 應用程式、service、schema、Alembic migration 與 pytest 測試
-- `docs/`：產品 spec 與目前前端改版的參考文件
-- `uploads/`：backend 使用的本機上傳儲存目錄
-
-## 目前產品範圍
-
-- 以本機優先為主的單一使用者工作流程
-- 目前 MVP 不包含 authentication 或 multi-tenant 功能
-- 聊天、檢索與 endpoint query 功能都依賴可正常運作的 Ollama runtime
-- 檢索品質會受已索引文件、所選提示詞模板與模型影響
-- 提示詞模板目前負責系統提示詞、溫度與預設設定；其中溫度會實際傳入 Ollama chat options，檢索訊息格式則不提供自訂
-- 新對話若未明確指定提示詞模板，後端會優先使用資料庫中的預設模板；若資料暫時缺少預設標記，則回退到第一筆可用模板
+> [!NOTE]
+> 上傳檔案的實際儲存位置由 `UPLOAD_DIR` 決定；在 Docker Compose 中會掛載到 backend 容器的 `/app/uploads`。
