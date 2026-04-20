@@ -169,8 +169,6 @@ Compose 專用的 frontend 環境變數：
 - `backend/`：FastAPI 應用程式、service、schema、Alembic migration 與 pytest 測試
 - `docs/`：產品 spec 與目前前端改版的參考文件
 - `uploads/`：backend 使用的本機上傳儲存目錄
-- `progress.md`：session 交接紀錄與驗證歷史
-- `feature_list.json`：repo 功能狀態追蹤快照
 
 ## 目前產品範圍
 
@@ -178,5 +176,5 @@ Compose 專用的 frontend 環境變數：
 - 目前 MVP 不包含 authentication 或 multi-tenant 功能
 - 聊天、檢索與 endpoint query 功能都依賴可正常運作的 Ollama runtime
 - 檢索品質會受已索引文件、所選提示詞模板與模型影響
-- 提示詞模板目前只負責系統提示詞、溫度與預設設定；檢索訊息格式不提供自訂
+- 提示詞模板目前負責系統提示詞、溫度與預設設定；其中溫度會實際傳入 Ollama chat options，檢索訊息格式則不提供自訂
 - 新對話若未明確指定提示詞模板，後端會優先使用資料庫中的預設模板；若資料暫時缺少預設標記，則回退到第一筆可用模板
