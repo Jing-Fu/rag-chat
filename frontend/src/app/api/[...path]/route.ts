@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 
-import { buildBackendUrl, createProxyHeaders } from "@/lib/api-proxy";
+import { buildBackendUrl, createProxyHeaders, createProxyResponseHeaders } from "@/lib/api-proxy";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,7 @@ async function proxyRequest(request: NextRequest): Promise<Response> {
 
   return new Response(upstreamResponse.body, {
     status: upstreamResponse.status,
-    headers: upstreamResponse.headers,
+    headers: createProxyResponseHeaders(upstreamResponse),
   });
 }
 

@@ -17,6 +17,10 @@ type RequestWithHeaders = {
   headers: Headers;
 };
 
+type HeadersLike = {
+  headers: Headers;
+};
+
 function normalizeBaseUrl(value: string): string {
   return value.replace(/\/+$/, "");
 }
@@ -58,6 +62,16 @@ export function buildBackendUrl(
 
 export function createProxyHeaders(request: RequestWithHeaders): Headers {
   const headers = new Headers(request.headers);
+
+  for (const headerName of HOP_BY_HOP_HEADERS) {
+    headers.delete(headerName);
+  }
+
+  return headers;
+}
+
+export function createProxyResponseHeaders(response: HeadersLike): Headers {
+  const headers = new Headers(response.headers);
 
   for (const headerName of HOP_BY_HOP_HEADERS) {
     headers.delete(headerName);

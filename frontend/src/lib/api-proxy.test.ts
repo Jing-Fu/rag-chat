@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { buildBackendUrl, createProxyHeaders, resolveBackendBaseUrl } from "@/lib/api-proxy";
+import {
+  buildBackendUrl,
+  createProxyHeaders,
+  createProxyResponseHeaders,
+  resolveBackendBaseUrl,
+} from "@/lib/api-proxy";
 
 function createRequestLike(headersInit: HeadersInit = {}) {
   return {
@@ -57,5 +62,21 @@ describe("api proxy helpers", () => {
     expect(headers.has("host")).toBe(false);
     expect(headers.has("connection")).toBe(false);
     expect(headers.has("content-length")).toBe(false);
+  });
+
+  it("removes hop-by-hop response headers before returning the proxy response", () => {
+    const headers = createProxyResponseHeaders(
+      createRequestLike({
+        connection: "keep-alive",
+        "content-length": "256",
+        "content-type": "text/event-stream",
+        "transfer-encoding": "chunked",
+      }),
+    );
+
+    expect(headers.get("content-type")).toBe("text/event-stream");
+    expect(headers.has("connection")).toBe(false);
+    expect(headers.has("content-length")).toBe(false);
+    expect(headers.has("transfer-encoding")).toBe(false);
   });
 });

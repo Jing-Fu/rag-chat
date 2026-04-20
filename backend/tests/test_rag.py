@@ -86,6 +86,7 @@ async def test_stream_rag_response_passes_prompt_temperature_to_ollama(monkeypat
     assert captured_chat_kwargs["model"] == request.model_name
     assert captured_chat_kwargs["options"] == {"temperature": 0.3}
     assert captured_chat_kwargs["stream"] is True
+    assert captured_chat_kwargs["think"] is False
     assert captured_chat_kwargs["messages"][0] == {
         "role": "system",
         "content": prompt_template.system_prompt,

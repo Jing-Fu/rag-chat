@@ -93,6 +93,7 @@ async def stream_rag_response(
             messages=messages,
             options={"temperature": float(prompt_template.temperature)},
             stream=True,
+            think=False,
         )
     except Exception as exc:
         raise ServiceError(f"Ollama chat request failed: {exc}", status_code=502) from exc
